@@ -1,53 +1,79 @@
 import streamlit as st
 from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
-import time
+from sentence_transformers import SentenceTransformer
+import faiss
+import numpy as np
 
-# -------- LOAD MODEL --------
+# -------- LOAD MODELS --------
 @st.cache_resource
-def load_model():
+def load_models():
     tokenizer = AutoTokenizer.from_pretrained("google/flan-t5-small")
     model = AutoModelForSeq2SeqLM.from_pretrained("google/flan-t5-small")
-    return tokenizer, model
+    embed = SentenceTransformer("all-MiniLM-L6-v2")
+    return tokenizer, model, embed
 
-st.title("AI Customer Help Assistant")
+tokenizer, model, embed_model = load_models()
 
-st.write("Loading model... ⏳ (first time takes time)")
+# -------- DATA (YOUR APP KNOWLEDGE) --------
+data = [
+{
+"text": "track order",
+"type": "navigation",
+"steps": ["Open app", "Go to My Orders", "Select order", "Click Track Order"]
+},
 
-tokenizer, model = load_model()
+{
+"text": "cancel order",
+"type": "navigation",
+"steps": ["Open app", "Go to My Orders", "Select order", "Click Cancel Order"]
+},
 
-st.success("Model loaded ✅")
+{
+"text": "payment failed",
+"type": "general",
+"reply": "If payment failed but money deducted, refund will happen in 3-5 days."
+}
+]
+
+# -------- VECTOR SEARCH --------
+texts = [d["text"] for d in data]
+vectors = embed_model.encode(texts)
+
+index = faiss.IndexFlatL2(vectors.shape[1])
+index.add(np.array(vectors))
 
 # -------- FUNCTION --------
-def get_answer(question):
-    # better prompt
-    prompt = f"Answer shortly and clearly: {question}"
+def generate_answer(question, context=""):
+    prompt = f"Answer clearly: {question}. Context: {context}"
 
     inputs = tokenizer(prompt, return_tensors="pt")
 
-    outputs = model.generate(
-        **inputs,
-        max_length=50,
-        num_beams=2,
-        early_stopping=True
-    )
+    outputs = model.generate(**inputs, max_length=50)
 
-    answer = tokenizer.decode(outputs[0], skip_special_tokens=True)
-    return answer
+    return tokenizer.decode(outputs[0], skip_special_tokens=True)
 
 # -------- UI --------
-st.write("Ask your problem below 👇")
+st.title("AI Customer Help Assistant")
 
-question = st.text_input("Type your question")
+question = st.text_input("Ask your problem")
 
-if not question:
-    st.info("Waiting for your question...")
-else:
-    start = time.time()
+if question:
 
-    with st.spinner("Processing..."):
-        answer = get_answer(question)
+    q_vec = embed_model.encode([question])
+    D,I = index.search(np.array(q_vec),1)
 
-    end = time.time()
+    result = data[I[0][0]]
 
-    st.success(answer)
-    st.caption(f"⏱ Response time: {round(end-start,2)} sec")
+    # -------- NAVIGATION --------
+    if result["type"] == "navigation":
+
+        st.subheader("Steps")
+
+        for step in result["steps"]:
+            st.write("-", step)
+
+    # -------- GENERAL --------
+    else:
+
+        answer = generate_answer(question, result["reply"])
+        st.write(answer)
