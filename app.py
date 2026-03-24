@@ -17,22 +17,25 @@ tokenizer, model, embed_model = load_models()
 # -------- DATA --------
 data = [
 {
-"text": "track order",
+"text": "track order where is my order find my order check order status",
 "type": "navigation",
+"keywords": ["order", "track", "status"],
 "steps": ["Open app", "Go to My Orders", "Click Track Order"],
 "images": ["orders_page.png", "track_button.png"]
 },
 
 {
-"text": "cancel order",
+"text": "cancel order remove order delete order",
 "type": "navigation",
+"keywords": ["cancel", "remove"],
 "steps": ["Open app", "Go to My Orders", "Click Cancel Order"],
 "images": ["cancel_page.png"]
 },
 
 {
-"text": "payment failed",
+"text": "payment failed money deducted refund issue",
 "type": "general",
+"keywords": ["payment", "refund"],
 "answer": "Refund will be processed in 3-5 days"
 }
 ]
@@ -50,7 +53,6 @@ if "chat_history" not in st.session_state:
 
 # -------- AI FUNCTION --------
 def generate_ai(question, history):
-
     context = ""
     for q, a in history[-3:]:
         context += f"User: {q}\nAI: {a}\n"
@@ -85,25 +87,38 @@ if user_input:
 
     st.chat_message("user").write(user_input)
 
-    # -------- SMALL TALK FIX --------
-    if user_input.lower() in ["hi", "hello"]:
-        answer = "Hello! How can I help you today?"
+    q = user_input.lower()
+    answer = None
 
-    else:
-        # -------- SIMILARITY CHECK --------
+    # -------- KEYWORD MATCH (STRONG) --------
+    for item in data:
+        if any(word in q for word in item["keywords"]):
+
+            if item["type"] == "navigation":
+                answer = "Follow these steps:\n" + "\n".join(item["steps"])
+                st.chat_message("assistant").write(answer)
+
+                for img in item["images"]:
+                    st.image(f"images/{img}")
+
+            else:
+                answer = item["answer"]
+                st.chat_message("assistant").write(answer)
+
+            break
+
+    # -------- VECTOR MATCH --------
+    if answer is None:
         q_vec = embed_model.encode([user_input])
         D, I = index.search(np.array(q_vec), 1)
 
         score = D[0][0]
 
-        # -------- FIXED FAST ANSWER --------
-        if score < 0.8:
-
+        if score < 1.5:
             result = data[I[0][0]]
 
             if result["type"] == "navigation":
                 answer = "Follow these steps:\n" + "\n".join(result["steps"])
-
                 st.chat_message("assistant").write(answer)
 
                 for img in result["images"]:
@@ -113,12 +128,12 @@ if user_input:
                 answer = result["answer"]
                 st.chat_message("assistant").write(answer)
 
-        # -------- AI ANSWER --------
-        else:
-            with st.spinner("Thinking..."):
-                answer = generate_ai(user_input, st.session_state.chat_history)
+    # -------- AI FALLBACK --------
+    if answer is None:
+        with st.spinner("Thinking..."):
+            answer = generate_ai(user_input, st.session_state.chat_history)
 
-            st.chat_message("assistant").write(answer)
+        st.chat_message("assistant").write(answer)
 
     # -------- SAVE MEMORY --------
     st.session_state.chat_history.append((user_input, answer))
