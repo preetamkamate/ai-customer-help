@@ -14,66 +14,80 @@ def load_models():
 
 tokenizer, model, embed_model = load_models()
 
-# -------- DATA (YOUR APP KNOWLEDGE) --------
+# -------- DATA --------
 data = [
 {
 "text": "track order",
 "type": "navigation",
-"steps": ["Open app", "Go to My Orders", "Select order", "Click Track Order"]
+"steps": ["Open app", "Go to My Orders", "Click Track Order"],
+"images": ["orders_page.png", "track_button.png"]
 },
 
 {
 "text": "cancel order",
 "type": "navigation",
-"steps": ["Open app", "Go to My Orders", "Select order", "Click Cancel Order"]
+"steps": ["Open app", "Go to My Orders", "Click Cancel Order"],
+"images": ["cancel_page.png"]
 },
 
 {
 "text": "payment failed",
 "type": "general",
-"reply": "If payment failed but money deducted, refund will happen in 3-5 days."
+"answer": "Refund will be processed in 3-5 days"
 }
 ]
 
-# -------- VECTOR SEARCH --------
+# -------- VECTOR DB --------
 texts = [d["text"] for d in data]
 vectors = embed_model.encode(texts)
 
 index = faiss.IndexFlatL2(vectors.shape[1])
 index.add(np.array(vectors))
 
-# -------- FUNCTION --------
-def generate_answer(question, context=""):
-    prompt = f"Answer clearly: {question}. Context: {context}"
-
+# -------- AI FUNCTION --------
+def generate_ai(question):
+    prompt = f"Answer clearly: {question}"
     inputs = tokenizer(prompt, return_tensors="pt")
-
     outputs = model.generate(**inputs, max_length=50)
-
     return tokenizer.decode(outputs[0], skip_special_tokens=True)
 
 # -------- UI --------
-st.title("AI Customer Help Assistant")
+st.title("AI Customer Support Assistant")
 
 question = st.text_input("Ask your problem")
 
 if question:
 
     q_vec = embed_model.encode([question])
-    D,I = index.search(np.array(q_vec),1)
+    D, I = index.search(np.array(q_vec), 1)
 
-    result = data[I[0][0]]
+    score = D[0][0]
 
-    # -------- NAVIGATION --------
-    if result["type"] == "navigation":
+    # -------- FIXED ANSWER (WITH IMAGE) --------
+    if score < 0.8:
 
-        st.subheader("Steps")
+        result = data[I[0][0]]
 
-        for step in result["steps"]:
-            st.write("-", step)
+        # Navigation → show steps + images
+        if result["type"] == "navigation":
 
-    # -------- GENERAL --------
+            st.success("⚡ Navigation Guide")
+
+            st.subheader("Steps")
+            for step in result["steps"]:
+                st.write("-", step)
+
+            st.subheader("Images")
+            for img in result["images"]:
+                st.image(f"images/{img}")
+
+        # General → fixed text
+        else:
+            st.success("⚡ Fast Answer")
+            st.write(result["answer"])
+
+    # -------- AI GENERATION --------
     else:
-
-        answer = generate_answer(question, result["reply"])
+        st.info("🤖 AI Generated Answer")
+        answer = generate_ai(question)
         st.write(answer)
