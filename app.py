@@ -20,16 +20,14 @@ data = [
 "text": "track order where is my order find my order check order status",
 "type": "navigation",
 "keywords": ["order", "track", "status"],
-"steps": ["Open app", "Go to My Orders", "Click Track Order"],
-"images": ["orders_page.png", "track_button.png"]
+"steps": ["Open app", "Go to My Orders", "Click Track Order"]
 },
 
 {
 "text": "cancel order remove order delete order",
 "type": "navigation",
 "keywords": ["cancel", "remove"],
-"steps": ["Open app", "Go to My Orders", "Click Cancel Order"],
-"images": ["cancel_page.png"]
+"steps": ["Open app", "Go to My Orders", "Click Cancel Order"]
 },
 
 {
@@ -90,22 +88,23 @@ if user_input:
     q = user_input.lower()
     answer = None
 
-    # -------- KEYWORD MATCH (STRONG) --------
-    for item in data:
-        if any(word in q for word in item["keywords"]):
+    # -------- SMALL TALK --------
+    if q in ["hi", "hello"]:
+        answer = "Hello! How can I help you today?"
+        st.chat_message("assistant").write(answer)
 
-            if item["type"] == "navigation":
-                answer = "Follow these steps:\n" + "\n".join(item["steps"])
+    # -------- KEYWORD MATCH --------
+    if answer is None:
+        for item in data:
+            if any(word in q for word in item["keywords"]):
+
+                if item["type"] == "navigation":
+                    answer = "Follow these steps:\n" + "\n".join(item["steps"])
+                else:
+                    answer = item["answer"]
+
                 st.chat_message("assistant").write(answer)
-
-                for img in item["images"]:
-                    st.image(f"images/{img}")
-
-            else:
-                answer = item["answer"]
-                st.chat_message("assistant").write(answer)
-
-            break
+                break
 
     # -------- VECTOR MATCH --------
     if answer is None:
@@ -119,14 +118,10 @@ if user_input:
 
             if result["type"] == "navigation":
                 answer = "Follow these steps:\n" + "\n".join(result["steps"])
-                st.chat_message("assistant").write(answer)
-
-                for img in result["images"]:
-                    st.image(f"images/{img}")
-
             else:
                 answer = result["answer"]
-                st.chat_message("assistant").write(answer)
+
+            st.chat_message("assistant").write(answer)
 
     # -------- AI FALLBACK --------
     if answer is None:
