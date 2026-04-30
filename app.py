@@ -4,7 +4,7 @@ from sentence_transformers import SentenceTransformer
 import faiss
 import numpy as np
 
-# -------- LOAD MODELS -------
+# -------- LOAD MODELS --------
 @st.cache_resource
 def load_models():
     tokenizer = AutoTokenizer.from_pretrained("google/flan-t5-small")
@@ -21,35 +21,35 @@ data = [
 {
 "text": "track order where is my order order status",
 "keywords": ["track order", "order status", "where is my order"],
-"answer": "Go to My Orders to track your order status."
+"answer": "You can track your order by going to the 'My Orders' section and selecting your order."
 },
 
-# BUY / ORDER PRODUCT
+# BUY PRODUCT
 {
-"text": "how to order buy product purchase item chocolates",
+"text": "how to order buy product purchase item",
 "keywords": ["buy", "purchase", "how to order", "order product"],
-"answer": "To order a product, search the item, add it to cart, and proceed to checkout."
+"answer": "To place an order, search for the product, add it to your cart, and proceed to checkout."
 },
 
-# CANCEL
+# CANCEL ORDER
 {
-"text": "cancel order how to cancel order",
+"text": "cancel order",
 "keywords": ["cancel order"],
-"answer": "Open My Orders, select order, and click Cancel."
+"answer": "To cancel your order, go to 'My Orders', select the order, and choose the cancel option."
 },
 
 # PAYMENT
 {
-"text": "payment failed refund money deducted",
+"text": "payment failed refund",
 "keywords": ["payment failed", "refund"],
-"answer": "Refund will be processed in 3-5 working days."
+"answer": "If your payment failed but the amount was deducted, the refund will be processed within 3-5 working days."
 },
 
 # ACCOUNT
 {
 "text": "reset password forgot password",
 "keywords": ["reset password", "forgot password"],
-"answer": "Click on Forgot Password to reset your password."
+"answer": "You can reset your password by clicking on 'Forgot Password' on the login page."
 },
 
 ]
@@ -62,7 +62,7 @@ for i in range(200):
     extra_data.append({
         "text": f"customer issue {topics[i % 5]} {i}",
         "keywords": [topics[i % 5]],
-        "answer": f"This is system response for {topics[i % 5]} issue {i}."
+        "answer": f"This is a system response for {topics[i % 5]} related query."
     })
 
 data += extra_data
@@ -84,7 +84,7 @@ st.title("💬 HACSS - Hybrid AI Customer Support System")
 # -------- INTRO --------
 if "started" not in st.session_state:
     st.session_state.started = True
-    intro = "Hello! I am HACSS, your AI Customer Support Assistant. How can I help you today?"
+    intro = "Hello! I am HACSS, your AI Customer Support Assistant. How can I assist you today?"
     st.chat_message("assistant").write(intro)
     st.session_state.chat_history.append(("system", intro))
 
@@ -94,9 +94,10 @@ for q, a in st.session_state.chat_history:
         st.chat_message("user").write(q)
         st.chat_message("assistant").write(a)
 
-# -------- AI --------
+# -------- AI FUNCTION --------
 def generate_ai(question):
-    inputs = tokenizer(question, return_tensors="pt")
+    prompt = f"You are a polite and professional customer support assistant. Answer clearly and respectfully.\n\nUser: {question}\nAssistant:"
+    inputs = tokenizer(prompt, return_tensors="pt")
     outputs = model.generate(**inputs, max_length=80)
     return tokenizer.decode(outputs[0], skip_special_tokens=True)
 
@@ -109,12 +110,31 @@ if user_input:
 
     # -------- GREETING --------
     if q in ["hi", "hello", "hey"]:
-        answer = "Hello! I am HACSS, your AI Customer Support Assistant. How can I help you today?"
+        answer = "Hello! I am HACSS, your AI Customer Support Assistant. How can I assist you today?"
         st.chat_message("assistant").write(answer)
         st.session_state.chat_history.append((user_input, answer))
         st.stop()
 
-    # -------- KEYWORD MATCH (PHRASE BASED) --------
+    # -------- SMALL TALK --------
+    if "thank" in q:
+        answer = "You're welcome! I'm happy to assist you. Please let me know if you need anything else."
+        st.chat_message("assistant").write(answer)
+        st.session_state.chat_history.append((user_input, answer))
+        st.stop()
+
+    if "love" in q:
+        answer = "Thank you for your kind words. I am here to assist you with your queries."
+        st.chat_message("assistant").write(answer)
+        st.session_state.chat_history.append((user_input, answer))
+        st.stop()
+
+    if "bro" in q:
+        answer = "I will communicate in a professional manner. How can I assist you?"
+        st.chat_message("assistant").write(answer)
+        st.session_state.chat_history.append((user_input, answer))
+        st.stop()
+
+    # -------- KEYWORD MATCH --------
     for item in data:
         if any(kw in q for kw in item["keywords"]):
             answer = item["answer"]
