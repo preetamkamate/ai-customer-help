@@ -6,11 +6,24 @@ from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
 # -------- LOAD MODELS --------
 @st.cache_resource
-def load_models():
-    embed = SentenceTransformer("all-MiniLM-L6-v2")
-    tokenizer = AutoTokenizer.from_pretrained("google/flan-t5-small")
-    model = AutoModelForSeq2SeqLM.from_pretrained("google/flan-t5-small")
-    return embed, tokenizer, model
+def generate_ai(question):
+    prompt = f"Answer clearly in one sentence: {question}"
+
+    inputs = tokenizer(prompt, return_tensors="pt")
+    outputs = model.generate(
+        **inputs,
+        max_length=50,
+        repetition_penalty=2.5,   # 🔥 stops looping
+        no_repeat_ngram_size=2    # 🔥 prevents repeat text
+    )
+
+    result = tokenizer.decode(outputs[0], skip_special_tokens=True)
+
+    # FILTER BAD OUTPUT
+    if "person" in result.lower() or len(result.split()) > 30:
+        return "Please clarify your question so I can help you better."
+
+    return result
 
 embed_model, tokenizer, model = load_models()
 
