@@ -2,12 +2,8 @@ import streamlit as st
 import numpy as np
 import faiss
 from sentence_transformers import SentenceTransformer
-from openai import OpenAI
 
-# -------- GPT SETUP --------
-client = OpenAI(api_key="YOUR_API_KEY")
-
-# -------- EMBEDDING MODEL --------
+# -------- LOAD MODEL --------
 @st.cache_resource
 def load_embed():
     return SentenceTransformer("all-MiniLM-L6-v2")
@@ -42,7 +38,14 @@ data = [
 {
 "text": "refund where will money come bank account wallet",
 "keywords": ["refund where", "refund account", "money come account"],
-"answer": "The refund will be sent back to your original payment method. For UPI or card, it goes to your bank account. For wallet payments, it returns to your wallet."
+"answer": "The refund will be sent to your original payment method. UPI/card → bank account. Wallet → wallet balance."
+},
+
+# REFUND STATUS
+{
+"text": "check refund status refund received or not",
+"keywords": ["refund status", "refund received", "check refund"],
+"answer": "You can check your refund status in 'My Orders' or your bank/app transaction history."
 },
 
 # CANCEL
@@ -80,18 +83,6 @@ for q, a in st.session_state.chat_history:
     if q != "system":
         st.chat_message("user").write(q)
         st.chat_message("assistant").write(a)
-
-# -------- GPT FUNCTION --------
-def generate_ai(question):
-    response = client.chat.completions.create(
-        model="gpt-4.1-mini",
-        messages=[
-            {"role": "system", "content": "You are a helpful customer support assistant. Be clear and polite."},
-            {"role": "user", "content": question}
-        ],
-        max_tokens=80
-    )
-    return response.choices[0].message.content.strip()
 
 # -------- INPUT --------
 user_input = st.chat_input("Ask your question...")
@@ -132,11 +123,7 @@ if user_input:
         st.session_state.chat_history.append((user_input, answer))
         st.stop()
 
-    # -------- GPT FALLBACK --------
-    answer = generate_ai(user_input)
-
-    if not answer or len(answer.strip()) < 5:
-        answer = "I'm here to help. Could you please clarify your question?"
-
+    # -------- FALLBACK --------
+    answer = "I'm here to help. Could you please explain your issue in more detail?"
     st.chat_message("assistant").write(answer)
     st.session_state.chat_history.append((user_input, answer))
