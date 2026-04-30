@@ -14,10 +14,10 @@ def load_models():
 
 embed_model, tokenizer, model = load_models()
 
-# -------- DATA --------
+# -------- DATA (INTENT BASED) --------
 data = [
 
-# ORDER
+# BUY
 {
 "text": "how to order buy product purchase item",
 "keywords": ["buy", "purchase", "how to order", "order product"],
@@ -27,8 +27,22 @@ data = [
 # AFTER CART
 {
 "text": "after adding to cart what to do next step checkout",
-"keywords": ["after cart", "after adding cart", "next step after cart"],
+"keywords": ["after cart", "next step", "checkout"],
 "answer": "After adding items to your cart, open the cart, click 'Checkout', enter your address, choose payment, and place your order."
+},
+
+# DELIVERY ISSUE
+{
+"text": "order not delivered not received late delivery",
+"keywords": ["not delivered", "not came", "late delivery"],
+"answer": "Your order may be delayed. Please check 'My Orders' for tracking details or contact support if needed."
+},
+
+# TRACK ORDER
+{
+"text": "where is my order track order status",
+"keywords": ["track order", "order status", "where is my order"],
+"answer": "You can track your order in the 'My Orders' section."
 },
 
 # PAYMENT
@@ -42,7 +56,7 @@ data = [
 {
 "text": "refund where will money come bank wallet",
 "keywords": ["refund where", "money come account"],
-"answer": "The refund will go back to your original payment method. UPI/card goes to bank, wallet returns to wallet."
+"answer": "The refund will go back to your original payment method. Bank for UPI/card, wallet for wallet payments."
 },
 
 ]
@@ -50,7 +64,6 @@ data = [
 # -------- VECTOR DB --------
 texts = [d["text"] for d in data]
 vectors = embed_model.encode(texts)
-
 index = faiss.IndexFlatL2(vectors.shape[1])
 index.add(np.array(vectors))
 
@@ -61,12 +74,14 @@ if "chat_history" not in st.session_state:
 # -------- UI --------
 st.title("💬 HACSS - Customer Support")
 
+# INTRO
 if "started" not in st.session_state:
     st.session_state.started = True
     intro = "Hello! I’m HACSS. How can I help you today?"
     st.chat_message("assistant").write(intro)
     st.session_state.chat_history.append(("system", intro))
 
+# SHOW CHAT
 for q, a in st.session_state.chat_history:
     if q != "system":
         st.chat_message("user").write(q)
@@ -74,8 +89,7 @@ for q, a in st.session_state.chat_history:
 
 # -------- AI FUNCTION --------
 def generate_ai(question):
-    prompt = f"Answer simply and clearly: {question}"
-
+    prompt = f"Answer clearly: {question}"
     inputs = tokenizer(prompt, return_tensors="pt")
     outputs = model.generate(
         **inputs,
@@ -83,12 +97,11 @@ def generate_ai(question):
         repetition_penalty=2.5,
         no_repeat_ngram_size=2
     )
-
     result = tokenizer.decode(outputs[0], skip_special_tokens=True)
 
-    # FILTER BAD OUTPUT
+    # filter garbage
     if "person" in result.lower() or len(result.split()) > 25:
-        return "Please clarify your question so I can assist you better."
+        return "Please clarify your question."
 
     return result
 
@@ -113,9 +126,15 @@ if user_input:
         st.session_state.chat_history.append((user_input, answer))
         st.stop()
 
-    # FOLLOW-UP FIX (IMPORTANT)
+    # PRIORITY RULES (IMPORTANT)
+    if "not came" in q or "not delivered" in q or "late" in q:
+        answer = "Your order may be delayed. Please check 'My Orders' or contact support."
+        st.chat_message("assistant").write(answer)
+        st.session_state.chat_history.append((user_input, answer))
+        st.stop()
+
     if "next" in q or "then" in q:
-        answer = "After adding items to your cart, go to the cart, click 'Checkout', enter details, and place your order."
+        answer = "After adding items to your cart, go to checkout, enter details, and place your order."
         st.chat_message("assistant").write(answer)
         st.session_state.chat_history.append((user_input, answer))
         st.stop()
