@@ -2,13 +2,17 @@ import streamlit as st
 import numpy as np
 import faiss
 from sentence_transformers import SentenceTransformer
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
-# -------- LOAD MODEL --------
+# -------- LOAD MODELS --------
 @st.cache_resource
-def load_embed():
-    return SentenceTransformer("all-MiniLM-L6-v2")
+def load_models():
+    embed = SentenceTransformer("all-MiniLM-L6-v2")
+    tokenizer = AutoTokenizer.from_pretrained("google/flan-t5-small")
+    model = AutoModelForSeq2SeqLM.from_pretrained("google/flan-t5-small")
+    return embed, tokenizer, model
 
-embed_model = load_embed()
+embed_model, tokenizer, model = load_models()
 
 # -------- DATA --------
 data = [
@@ -27,6 +31,13 @@ data = [
 "answer": "To place an order, search the product, add it to your cart, and proceed to checkout."
 },
 
+# AFTER CART (IMPORTANT FIX)
+{
+"text": "after adding to cart what to do checkout next step",
+"keywords": ["after cart", "after adding cart", "next step after cart"],
+"answer": "After adding items to your cart, open the cart, click 'Proceed to Checkout', enter your address, choose payment, and place your order."
+},
+
 # PAYMENT FAILED
 {
 "text": "payment failed refund",
@@ -37,14 +48,14 @@ data = [
 # REFUND WHERE
 {
 "text": "refund where will money come bank account wallet",
-"keywords": ["refund where", "refund account", "money come account"],
-"answer": "The refund will be sent to your original payment method. UPI/card → bank account. Wallet → wallet balance."
+"keywords": ["refund where", "money come account", "refund account"],
+"answer": "The refund will be sent back to your original payment method. UPI or card goes to your bank account, wallet payments return to your wallet."
 },
 
 # REFUND STATUS
 {
-"text": "check refund status refund received or not",
-"keywords": ["refund status", "refund received", "check refund"],
+"text": "check refund status refund received",
+"keywords": ["refund status", "check refund"],
 "answer": "You can check your refund status in 'My Orders' or your bank/app transaction history."
 },
 
@@ -84,6 +95,18 @@ for q, a in st.session_state.chat_history:
         st.chat_message("user").write(q)
         st.chat_message("assistant").write(a)
 
+# -------- FLAN-T5 FUNCTION --------
+def generate_ai(question):
+    prompt = f"Answer clearly: {question}"
+    inputs = tokenizer(prompt, return_tensors="pt")
+    outputs = model.generate(**inputs, max_length=60)
+    result = tokenizer.decode(outputs[0], skip_special_tokens=True)
+
+    if not result or len(result.strip()) < 5:
+        return "I'm here to help. Could you please explain your issue more clearly?"
+
+    return result
+
 # -------- INPUT --------
 user_input = st.chat_input("Ask your question...")
 
@@ -91,21 +114,21 @@ if user_input:
     st.chat_message("user").write(user_input)
     q = user_input.lower()
 
-    # -------- GREETING --------
+    # GREETING
     if any(g in q for g in ["hi", "hello", "hey"]):
         answer = "Hello! How can I help you today?"
         st.chat_message("assistant").write(answer)
         st.session_state.chat_history.append((user_input, answer))
         st.stop()
 
-    # -------- THANKS --------
+    # THANKS
     if "thank" in q:
         answer = "You're welcome! Let me know if you need anything else."
         st.chat_message("assistant").write(answer)
         st.session_state.chat_history.append((user_input, answer))
         st.stop()
 
-    # -------- KEYWORD MATCH --------
+    # KEYWORD MATCH
     for item in data:
         if any(kw in q for kw in item["keywords"]):
             answer = item["answer"]
@@ -113,7 +136,7 @@ if user_input:
             st.session_state.chat_history.append((user_input, answer))
             st.stop()
 
-    # -------- VECTOR MATCH --------
+    # VECTOR MATCH (AI similarity)
     q_vec = embed_model.encode([user_input])
     D, I = index.search(np.array(q_vec), 1)
 
@@ -123,7 +146,8 @@ if user_input:
         st.session_state.chat_history.append((user_input, answer))
         st.stop()
 
-    # -------- FALLBACK --------
-    answer = "I'm here to help. Could you please explain your issue in more detail?"
+    # FLAN-T5 FALLBACK
+    answer = generate_ai(user_input)
+
     st.chat_message("assistant").write(answer)
     st.session_state.chat_history.append((user_input, answer))
