@@ -28,21 +28,21 @@ data = [
 {
 "text": "how to order buy product purchase item",
 "keywords": ["buy", "purchase", "how to order", "order product"],
-"answer": "To place an order, search the product, add it to your cart, and continue to checkout."
+"answer": "To place an order, search for the product, add it to your cart, and proceed to checkout."
 },
 
 # CANCEL
 {
 "text": "cancel order",
 "keywords": ["cancel order"],
-"answer": "Open 'My Orders', select your order, and choose cancel."
+"answer": "Go to 'My Orders', select your order, and choose cancel."
 },
 
 # PAYMENT
 {
 "text": "payment failed refund",
 "keywords": ["payment failed", "refund"],
-"answer": "If money was deducted, the refund will be processed in 3–5 working days."
+"answer": "If money was deducted, the refund will be processed within 3–5 working days."
 },
 
 # PASSWORD
@@ -83,12 +83,9 @@ for q, a in st.session_state.chat_history:
 # -------- AI FUNCTION --------
 def generate_ai(question):
     prompt = f"""
-You are HACSS, a friendly customer support assistant.
-
-Rules:
-- Be simple and helpful
-- Ignore slang like 'bro'
-- Answer clearly in 1-2 sentences
+You are a friendly customer support assistant.
+Respond clearly and politely.
+Ignore slang words like 'bro'.
 
 User: {question}
 Assistant:
@@ -104,14 +101,14 @@ if user_input:
     st.chat_message("user").write(user_input)
     q = user_input.lower()
 
-    # GREETING
-    if q in ["hi", "hello", "hey"]:
-        answer = "Hello! How can I help you?"
+    # -------- GREETING (FIXED) --------
+    if any(greet in q for greet in ["hi", "hello", "hey"]):
+        answer = "Hello! How can I help you today?"
         st.chat_message("assistant").write(answer)
         st.session_state.chat_history.append((user_input, answer))
         st.stop()
 
-    # THANKS
+    # -------- THANKS --------
     if "thank" in q:
         answer = "You're welcome! Let me know if you need anything else."
         st.chat_message("assistant").write(answer)
@@ -119,24 +116,33 @@ if user_input:
         st.stop()
 
     # -------- KEYWORD MATCH --------
+    answer = None
     for item in data:
         if any(kw in q for kw in item["keywords"]):
             answer = item["answer"]
-            st.chat_message("assistant").write(answer)
-            st.session_state.chat_history.append((user_input, answer))
-            st.stop()
+            break
+
+    if answer:
+        st.chat_message("assistant").write(answer)
+        st.session_state.chat_history.append((user_input, answer))
+        st.stop()
 
     # -------- VECTOR MATCH --------
     q_vec = embed_model.encode([user_input])
     D, I = index.search(np.array(q_vec), 1)
 
-    if D[0][0] < 1.5:
+    if D[0][0] < 1.2:   # stricter threshold (IMPORTANT)
         answer = data[I[0][0]]["answer"]
-        st.chat_message("assistant").write(answer)
-        st.session_state.chat_history.append((user_input, answer))
-        st.stop()
+        if answer and len(answer.strip()) > 5:
+            st.chat_message("assistant").write(answer)
+            st.session_state.chat_history.append((user_input, answer))
+            st.stop()
 
     # -------- AI FALLBACK --------
     answer = generate_ai(user_input)
+
+    if not answer or len(answer.strip()) < 5:
+        answer = "I'm here to help. Could you please clarify your question?"
+
     st.chat_message("assistant").write(answer)
     st.session_state.chat_history.append((user_input, answer))
