@@ -4,7 +4,7 @@ from sentence_transformers import SentenceTransformer
 import faiss
 import numpy as np
 
-# -------- LOAD MODELS --------
+# -------- LOAD MODELS -------
 @st.cache_resource
 def load_models():
     tokenizer = AutoTokenizer.from_pretrained("google/flan-t5-small")
