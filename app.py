@@ -14,55 +14,60 @@ def load_models():
 
 embed_model, tokenizer, model = load_models()
 
-# -------- DATA (INTENT BASED) --------
-data = [
+# -------- DATA SECTIONS --------
 
-# BUY
-{
-"text": "how to order buy product purchase item",
-"keywords": ["buy", "purchase", "how to order", "order product"],
-"answer": "To place an order, search for the product, add it to your cart, and proceed to checkout."
-},
-
-# AFTER CART
-{
-"text": "after adding to cart what to do next step checkout",
-"keywords": ["after cart", "next step", "checkout"],
-"answer": "After adding items to your cart, open the cart, click 'Checkout', enter your address, choose payment, and place your order."
-},
-
-# DELIVERY ISSUE
-{
-"text": "order not delivered not received late delivery",
-"keywords": ["not delivered", "not came", "late delivery"],
-"answer": "Your order may be delayed. Please check 'My Orders' for tracking details or contact support if needed."
-},
-
-# TRACK ORDER
-{
-"text": "where is my order track order status",
-"keywords": ["track order", "order status", "where is my order"],
-"answer": "You can track your order in the 'My Orders' section."
-},
-
-# PAYMENT
-{
-"text": "payment failed refund",
-"keywords": ["payment failed", "refund"],
-"answer": "If payment failed but money was deducted, the refund will be processed within 3–5 working days."
-},
-
-# REFUND WHERE
-{
-"text": "refund where will money come bank wallet",
-"keywords": ["refund where", "money come account"],
-"answer": "The refund will go back to your original payment method. Bank for UPI/card, wallet for wallet payments."
-},
-
+order_data = [
+    {
+        "text": "where is my order track order status",
+        "keywords": ["track order", "order status", "where is my order"],
+        "answer": "You can track your order in the 'My Orders' section."
+    },
+    {
+        "text": "order not delivered late delivery problem",
+        "keywords": ["not delivered", "not came", "late delivery"],
+        "answer": "Your order may be delayed. Please check 'My Orders' or contact support."
+    }
 ]
 
+buy_data = [
+    {
+        "text": "how to order buy product purchase item",
+        "keywords": ["buy", "purchase", "how to order", "order product"],
+        "answer": "Search the product, add it to your cart, and proceed to checkout."
+    },
+    {
+        "text": "after adding to cart next step checkout",
+        "keywords": ["after cart", "next step", "checkout"],
+        "answer": "Open cart, click checkout, enter details, and place your order."
+    }
+]
+
+payment_data = [
+    {
+        "text": "payment failed refund",
+        "keywords": ["payment failed", "refund"],
+        "answer": "Refund will be processed in 3–5 working days."
+    },
+    {
+        "text": "refund where money come bank wallet",
+        "keywords": ["refund where", "money come account"],
+        "answer": "Refund goes to original payment method (bank or wallet)."
+    }
+]
+
+account_data = [
+    {
+        "text": "forgot password reset password",
+        "keywords": ["forgot password", "reset password"],
+        "answer": "Use 'Forgot Password' on login page to reset."
+    }
+]
+
+# -------- MERGE ALL --------
+all_data = order_data + buy_data + payment_data + account_data
+
 # -------- VECTOR DB --------
-texts = [d["text"] for d in data]
+texts = [d["text"] for d in all_data]
 vectors = embed_model.encode(texts)
 index = faiss.IndexFlatL2(vectors.shape[1])
 index.add(np.array(vectors))
@@ -74,14 +79,12 @@ if "chat_history" not in st.session_state:
 # -------- UI --------
 st.title("💬 HACSS - Customer Support")
 
-# INTRO
 if "started" not in st.session_state:
     st.session_state.started = True
     intro = "Hello! I’m HACSS. How can I help you today?"
     st.chat_message("assistant").write(intro)
     st.session_state.chat_history.append(("system", intro))
 
-# SHOW CHAT
 for q, a in st.session_state.chat_history:
     if q != "system":
         st.chat_message("user").write(q)
@@ -99,8 +102,7 @@ def generate_ai(question):
     )
     result = tokenizer.decode(outputs[0], skip_special_tokens=True)
 
-    # filter garbage
-    if "person" in result.lower() or len(result.split()) > 25:
+    if len(result.split()) > 25:
         return "Please clarify your question."
 
     return result
@@ -126,38 +128,46 @@ if user_input:
         st.session_state.chat_history.append((user_input, answer))
         st.stop()
 
-    # PRIORITY RULES (IMPORTANT)
-    if "not came" in q or "not delivered" in q or "late" in q:
-        answer = "Your order may be delayed. Please check 'My Orders' or contact support."
-        st.chat_message("assistant").write(answer)
-        st.session_state.chat_history.append((user_input, answer))
-        st.stop()
+    # -------- SECTION FILTER --------
+    if any(word in q for word in ["refund", "payment"]):
+        selected_data = payment_data
 
-    if "next" in q or "then" in q:
-        answer = "After adding items to your cart, go to checkout, enter details, and place your order."
-        st.chat_message("assistant").write(answer)
-        st.session_state.chat_history.append((user_input, answer))
-        st.stop()
+    elif any(word in q for word in ["buy", "cart", "checkout"]):
+        selected_data = buy_data
 
-    # KEYWORD MATCH
-    for item in data:
+    elif any(word in q for word in ["order", "delivery"]):
+        selected_data = order_data
+
+    elif any(word in q for word in ["account", "password"]):
+        selected_data = account_data
+
+    else:
+        selected_data = all_data
+
+    # -------- KEYWORD MATCH --------
+    for item in selected_data:
         if any(kw in q for kw in item["keywords"]):
             answer = item["answer"]
             st.chat_message("assistant").write(answer)
             st.session_state.chat_history.append((user_input, answer))
             st.stop()
 
-    # VECTOR MATCH
+    # -------- VECTOR MATCH --------
+    texts_sel = [d["text"] for d in selected_data]
+    vecs_sel = embed_model.encode(texts_sel)
+    temp_index = faiss.IndexFlatL2(vecs_sel.shape[1])
+    temp_index.add(np.array(vecs_sel))
+
     q_vec = embed_model.encode([user_input])
-    D, I = index.search(np.array(q_vec), 1)
+    D, I = temp_index.search(np.array(q_vec), 1)
 
     if D[0][0] < 1.2:
-        answer = data[I[0][0]]["answer"]
+        answer = selected_data[I[0][0]]["answer"]
         st.chat_message("assistant").write(answer)
         st.session_state.chat_history.append((user_input, answer))
         st.stop()
 
-    # AI FALLBACK
+    # -------- AI FALLBACK --------
     answer = generate_ai(user_input)
     st.chat_message("assistant").write(answer)
     st.session_state.chat_history.append((user_input, answer))
