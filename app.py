@@ -10,41 +10,58 @@ def load_model():
 
 embed_model = load_model()
 
-# -------- DATA GROUPS --------
+# -------- DATA --------
+sections = {
+    "Order / Delivery": [
+        {
+            "text": "track order where is my order not delivered late",
+            "answer": """1. Open My Orders
+2. Check order status
+3. Track delivery
+4. Contact support if delayed"""
+        }
+    ],
 
-order_data = [
-    {"text": "where is my order track order status",
-     "answer": "You can track your order in the 'My Orders' section."},
+    "Buy / Product": [
+        {
+            "text": "how to order buy product purchase food",
+            "answer": """1. Search the product
+2. Add to cart
+3. Go to checkout
+4. Enter details
+5. Place your order"""
+        },
+        {
+            "text": "after adding cart what next",
+            "answer": """1. Open cart
+2. Click checkout
+3. Enter delivery details
+4. Select payment
+5. Confirm order"""
+        }
+    ],
 
-    {"text": "order not delivered late delivery not came",
-     "answer": "Your order may be delayed. Please check 'My Orders' or contact support."}
-]
+    "Payment / Refund": [
+        {
+            "text": "payment failed refund",
+            "answer": """1. Wait 3–5 working days
+2. Check bank/wallet
+3. Contact support if needed"""
+        }
+    ],
 
-buy_data = [
-    {"text": "how to order buy product purchase item",
-     "answer": "Search the product, add it to your cart, and proceed to checkout."},
+    "Account": [
+        {
+            "text": "forgot password reset login issue",
+            "answer": """1. Go to login page
+2. Click Forgot Password
+3. Enter details
+4. Set new password"""
+        }
+    ]
+}
 
-    {"text": "after adding to cart what next checkout process",
-     "answer": "Go to cart, click checkout, enter details, and place your order."}
-]
-
-payment_data = [
-    {"text": "payment failed refund money deducted",
-     "answer": "If payment failed, refund will be processed in 3–5 working days."},
-
-    {"text": "refund where money come bank wallet",
-     "answer": "Refund goes to your original payment method (bank or wallet)."}
-]
-
-account_data = [
-    {"text": "forgot password reset account login issue",
-     "answer": "Use 'Forgot Password' on login page to reset your account."}
-]
-
-# -------- MERGE ALL --------
-all_data = order_data + buy_data + payment_data + account_data
-
-# -------- FUNCTION TO BUILD FAISS --------
+# -------- BUILD INDEX --------
 def build_index(data):
     texts = [d["text"] for d in data]
     vectors = embed_model.encode(texts)
@@ -55,72 +72,42 @@ def build_index(data):
 # -------- UI --------
 st.title("💬 HACSS - Customer Support")
 
+# SECTION SELECT
+selected_section = st.selectbox(
+    "Select your issue type:",
+    list(sections.keys())
+)
+
+# INIT CHAT
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
-# INTRO
-if "started" not in st.session_state:
-    st.session_state.started = True
-    intro = "Hello! I’m HACSS. How can I help you today?"
-    st.chat_message("assistant").write(intro)
-    st.session_state.chat_history.append(("system", intro))
-
 # SHOW CHAT
 for q, a in st.session_state.chat_history:
-    if q != "system":
-        st.chat_message("user").write(q)
-        st.chat_message("assistant").write(a)
+    st.chat_message("user").write(q)
+    st.chat_message("assistant").write(a)
 
-# -------- INPUT --------
+# INPUT
 user_input = st.chat_input("Ask your question...")
 
 if user_input:
     st.chat_message("user").write(user_input)
-    q = user_input.lower()
 
-    # GREETING
-    if any(g in q for g in ["hi", "hello", "hey"]):
-        answer = "Hello! How can I help you today?"
-        st.chat_message("assistant").write(answer)
-        st.session_state.chat_history.append((user_input, answer))
-        st.stop()
+    data = sections[selected_section]
+    index = build_index(data)
 
-    # THANKS
-    if "thank" in q:
-        answer = "You're welcome! Let me know if you need anything else."
-        st.chat_message("assistant").write(answer)
-        st.session_state.chat_history.append((user_input, answer))
-        st.stop()
-
-    # -------- SECTION DETECTION --------
-    if any(word in q for word in ["refund", "payment"]):
-        selected_data = payment_data
-
-    elif any(word in q for word in ["buy", "cart", "checkout", "order food"]):
-        selected_data = buy_data
-
-    elif any(word in q for word in ["order", "delivery"]):
-        selected_data = order_data
-
-    elif any(word in q for word in ["account", "password", "login"]):
-        selected_data = account_data
-
-    else:
-        selected_data = all_data
-
-    # -------- FAISS SEARCH ON SELECTED GROUP --------
-    index = build_index(selected_data)
-
-    texts = [d["text"] for d in selected_data]
     q_vec = embed_model.encode([user_input])
-
     D, I = index.search(np.array(q_vec), 1)
 
-    # -------- THRESHOLD CHECK --------
     if D[0][0] < 1.2:
-        answer = selected_data[I[0][0]]["answer"]
+        answer = data[I[0][0]]["answer"]
     else:
-        answer = "Sorry, I couldn't understand clearly. Please ask about orders, payments, or account issues."
+        answer = """I didn't understand clearly.
+
+Try asking about:
+• Order
+• Payment
+• Account"""
 
     st.chat_message("assistant").write(answer)
     st.session_state.chat_history.append((user_input, answer))
