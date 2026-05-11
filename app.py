@@ -17,95 +17,91 @@ def load_models():
 
 tokenizer, model, embed_model = load_models()
 
-# ---------------- DATASET ----------------
-data = [
+# ---------------- DATA ----------------
+sections = {
 
-# ORDER
+"Orders": [
+
 {
-    "text": "track order where is my order order status",
-    "keywords": ["order", "track", "status"],
-    "answer": """1. Open app
+"text": "track order where is my order order status",
+"keywords": ["order", "track", "status"],
+"answer": """1. Open app
 2. Go to My Orders
 3. Select your order
 4. Click Track Order"""
 },
 
 {
-    "text": "cancel order remove my order",
-    "keywords": ["cancel", "remove"],
-    "answer": """1. Open app
+"text": "cancel order remove order",
+"keywords": ["cancel", "remove"],
+"answer": """1. Open app
 2. Go to My Orders
-3. Select order
-4. Click Cancel"""
-},
+3. Click Cancel Order"""
+}
+
+],
+
+"Payment": [
 
 {
-    "text": "delivery delayed late order",
-    "keywords": ["delivery", "late", "delay"],
-    "answer": "Your delivery may be delayed due to logistics or weather conditions."
-},
-
-# PAYMENT
-{
-    "text": "payment failed refund money deducted",
-    "keywords": ["payment", "refund", "money"],
-    "answer": """1. Wait 3-5 working days
-2. Check bank/wallet status
+"text": "payment failed refund money deducted",
+"keywords": ["payment", "refund"],
+"answer": """1. Wait 3-5 days
+2. Check bank/wallet
 3. Contact support if needed"""
 },
 
 {
-    "text": "double payment charged twice",
-    "keywords": ["double", "charged"],
-    "answer": "If amount was deducted twice, refund will be processed automatically."
-},
+"text": "double payment charged twice",
+"keywords": ["double", "charged"],
+"answer": "Refund will be processed automatically."
+}
 
-# ACCOUNT
+],
+
+"Account": [
+
 {
-    "text": "forgot password reset password",
-    "keywords": ["password", "reset"],
-    "answer": """1. Click Forgot Password
-2. Enter registered mobile/email
+"text": "forgot password reset password",
+"keywords": ["password", "reset"],
+"answer": """1. Click Forgot Password
+2. Verify OTP
 3. Set new password"""
 },
 
 {
-    "text": "delete account permanently remove account",
-    "keywords": ["delete", "account"],
-    "answer": "Please contact customer support to permanently delete your account."
+"text": "delete account permanently",
+"keywords": ["delete", "account"],
+"answer": "Please contact support to delete your account."
+}
+
+],
+
+"Delivery": [
+
+{
+"text": "delivery delayed late order",
+"keywords": ["delivery", "delay", "late"],
+"answer": "Delivery may be delayed due to logistics or weather."
 },
 
-# RETURN
 {
-    "text": "return product replace item exchange",
-    "keywords": ["return", "replace", "exchange"],
-    "answer": """1. Open My Orders
-2. Select product
-3. Click Return/Replace"""
-},
-
-# CUSTOMER CARE
-{
-    "text": "customer care support contact agent",
-    "keywords": ["support", "agent", "customer care"],
-    "answer": "You can contact customer support from Help Center section."
+"text": "delivery charges shipping cost",
+"keywords": ["shipping", "charges"],
+"answer": "Shipping charges depend on location."
 }
 
 ]
 
-# ---------------- LARGE DATA ----------------
-extra_data = []
+}
 
-topics = ["order", "payment", "refund", "delivery", "account"]
+# ---------------- SELECT SECTION ----------------
+selected_section = st.sidebar.selectbox(
+"Select Issue Section",
+list(sections.keys())
+)
 
-for i in range(300):
-    extra_data.append({
-        "text": f"customer issue about {topics[i % 5]} number {i}",
-        "keywords": [topics[i % 5]],
-        "answer": f"This is automated response for {topics[i % 5]} issue {i}."
-    })
-
-data = data + extra_data
+data = sections[selected_section]
 
 # ---------------- VECTOR DB ----------------
 texts = [d["text"] for d in data]
@@ -120,8 +116,9 @@ index.add(np.array(vectors))
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
-# ---------------- INTRO MESSAGE ----------------
+# ---------------- INTRO ----------------
 if "started" not in st.session_state:
+
     st.session_state.started = True
 
     intro = "Hello! I am HACSS, your AI Customer Support Assistant. How can I help you today?"
@@ -137,14 +134,14 @@ def generate_ai(question, history):
         context += f"{role}: {msg}\n"
 
     prompt = f"""
-You are HACSS, a helpful AI customer support assistant.
+You are HACSS, a helpful AI Customer Support Assistant.
 
 Conversation:
 {context}
 
 User: {question}
 
-Answer politely and clearly:
+Answer politely:
 """
 
     inputs = tokenizer(prompt, return_tensors="pt")
@@ -161,15 +158,18 @@ Answer politely and clearly:
 # ---------------- UI ----------------
 st.title("💬 HACSS - Customer Support")
 
-# SHOW CHAT
+st.subheader(f"Selected: {selected_section}")
+
+# ---------------- SHOW CHAT ----------------
 for role, msg in st.session_state.chat_history:
 
     if role == "user":
         st.chat_message("user").write(msg)
+
     else:
         st.chat_message("assistant").write(msg)
 
-# USER INPUT
+# ---------------- INPUT ----------------
 user_input = st.chat_input("Ask your question...")
 
 if user_input:
