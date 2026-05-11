@@ -1,5 +1,5 @@
-streamlit==1.35.0
-transformers==4.41.2
+streamlit
+transformers
 torch
 sentence-transformers
 faiss-cpu
