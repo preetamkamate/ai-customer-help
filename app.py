@@ -1,236 +1,113 @@
 import streamlit as st
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
-from sentence_transformers import SentenceTransformer
-import faiss
 import numpy as np
+import faiss
+from sentence_transformers import SentenceTransformer
 
-# ---------------- PAGE ----------------
-st.set_page_config(page_title="HACSS", page_icon="💬")
-
-# ---------------- LOAD MODELS ----------------
+# -------- LOAD MODEL --------
 @st.cache_resource
-def load_models():
+def load_model():
+    return SentenceTransformer("all-MiniLM-L6-v2")
 
-    tokenizer = AutoTokenizer.from_pretrained("google/flan-t5-small")
+embed_model = load_model()
 
-    model = AutoModelForSeq2SeqLM.from_pretrained(
-        "google/flan-t5-small"
-    )
-
-    embed_model = SentenceTransformer(
-        "all-MiniLM-L6-v2"
-    )
-
-    return tokenizer, model, embed_model
-
-tokenizer, model, embed_model = load_models()
-
-# ---------------- DATA ----------------
-data = {
-
-    "Payment": [
-
+# -------- DATA --------
+sections = {
+    "Order / Delivery": [
         {
-            "keywords": ["refund", "money", "payment failed"],
-            "answer": """1. Wait 3-5 working days
-2. Check bank/wallet
-3. Contact support if needed"""
-        },
-
-        {
-            "keywords": ["charged twice", "double payment"],
-            "answer": "Refund for extra payment will be processed automatically."
+            "text": "track order where is my order not delivered late",
+            "answer": """1. Open My Orders
+2. Check order status
+3. Track delivery
+4. Contact support if delayed"""
         }
-
     ],
 
-    "Order": [
-
+    "Buy / Product": [
         {
-            "keywords": ["track order", "where is my order"],
-            "answer": """1. Open app
-2. Go to My Orders
-3. Click Track Order"""
+            "text": "how to order buy product purchase food",
+            "answer": """1. Search the product
+2. Add to cart
+3. Go to checkout
+4. Enter details
+5. Place your order"""
         },
-
         {
-            "keywords": ["cancel order"],
-            "answer": """1. Open My Orders
-2. Select Order
-3. Click Cancel"""
+            "text": "after adding cart what next",
+            "answer": """1. Open cart
+2. Click checkout
+3. Enter delivery details
+4. Select payment
+5. Confirm order"""
         }
+    ],
 
+    "Payment / Refund": [
+        {
+            "text": "payment failed refund",
+            "answer": """1. Wait 3–5 working days
+2. Check bank/wallet
+3. Contact support if needed"""
+        }
     ],
 
     "Account": [
-
         {
-            "keywords": ["reset password", "forgot password"],
-            "answer": """1. Click Forgot Password
-2. Verify mobile/email
-3. Set new password"""
+            "text": "forgot password reset login issue",
+            "answer": """1. Go to login page
+2. Click Forgot Password
+3. Enter details
+4. Set new password"""
         }
-
     ]
-
 }
 
-# ---------------- CREATE VECTOR DATA ----------------
-texts = []
-answers = []
+# -------- BUILD INDEX --------
+def build_index(data):
+    texts = [d["text"] for d in data]
+    vectors = embed_model.encode(texts)
+    index = faiss.IndexFlatL2(vectors.shape[1])
+    index.add(np.array(vectors))
+    return index
 
-for category in data:
-
-    for item in data[category]:
-
-        for k in item["keywords"]:
-
-            texts.append(k)
-
-            answers.append(item["answer"])
-
-# ---------------- EMBEDDINGS ----------------
-vectors = embed_model.encode(texts)
-
-index = faiss.IndexFlatL2(vectors.shape[1])
-
-index.add(np.array(vectors))
-
-# ---------------- CHAT MEMORY ----------------
-if "messages" not in st.session_state:
-    st.session_state.messages = []
-
-# ---------------- INTRO ----------------
-if "intro" not in st.session_state:
-
-    st.session_state.intro = True
-
-    st.session_state.messages.append(
-        (
-            "assistant",
-            "Hello! I am HACSS, your AI Customer Support Assistant. How can I help you today?"
-        )
-    )
-
-# ---------------- FLAN-T5 FUNCTION ----------------
-def generate_ai(question):
-
-    prompt = f"""
-You are HACSS, an AI customer support assistant.
-
-Answer the user politely and clearly.
-
-User Question:
-{question}
-
-Answer:
-"""
-
-    inputs = tokenizer(
-        prompt,
-        return_tensors="pt",
-        truncation=True,
-        max_length=256
-    )
-
-    outputs = model.generate(
-        **inputs,
-        max_new_tokens=60,
-        temperature=0.7,
-        do_sample=True
-    )
-
-    answer = tokenizer.decode(
-        outputs[0],
-        skip_special_tokens=True
-    )
-
-    return answer
-
-# ---------------- UI ----------------
+# -------- UI --------
 st.title("💬 HACSS - Customer Support")
 
-# ---------------- CATEGORY SELECT ----------------
-selected = st.selectbox(
-    "Select Issue Category",
-    list(data.keys())
+# SECTION SELECT
+selected_section = st.selectbox(
+    "Select your issue type:",
+    list(sections.keys())
 )
 
-st.write(f"### Selected: {selected}")
+# INIT CHAT
+if "chat_history" not in st.session_state:
+    st.session_state.chat_history = []
 
-# ---------------- SHOW CHAT ----------------
-for role, msg in st.session_state.messages:
+# SHOW CHAT
+for q, a in st.session_state.chat_history:
+    st.chat_message("user").write(q)
+    st.chat_message("assistant").write(a)
 
-    st.chat_message(role).write(msg)
-
-# ---------------- INPUT ----------------
+# INPUT
 user_input = st.chat_input("Ask your question...")
 
 if user_input:
-
-    st.session_state.messages.append(
-        ("user", user_input)
-    )
-
     st.chat_message("user").write(user_input)
 
-    q = user_input.lower()
+    data = sections[selected_section]
+    index = build_index(data)
 
-    found = False
+    q_vec = embed_model.encode([user_input])
+    D, I = index.search(np.array(q_vec), 1)
 
-    # ---------------- KEYWORD MATCH ----------------
-    for item in data[selected]:
+    if D[0][0] < 1.2:
+        answer = data[I[0][0]]["answer"]
+    else:
+        answer = """I didn't understand clearly.
 
-        for k in item["keywords"]:
+Try asking about:
+• Order
+• Payment
+• Account"""
 
-            if k in q:
-
-                answer = item["answer"]
-
-                st.chat_message("assistant").write(answer)
-
-                st.session_state.messages.append(
-                    ("assistant", answer)
-                )
-
-                found = True
-
-                break
-
-        if found:
-            break
-
-    # ---------------- FAISS SEARCH ----------------
-    if not found:
-
-        q_vec = embed_model.encode([q])
-
-        D, I = index.search(np.array(q_vec), 1)
-
-        score = D[0][0]
-
-        # LOWER = MORE SIMILAR
-        if score < 1.0:
-
-            answer = answers[I[0][0]]
-
-            st.chat_message("assistant").write(answer)
-
-            st.session_state.messages.append(
-                ("assistant", answer)
-            )
-
-            found = True
-
-    # ---------------- FLAN-T5 AI ----------------
-    if not found:
-
-        with st.spinner("HACSS is thinking..."):
-
-            ai_answer = generate_ai(user_input)
-
-        st.chat_message("assistant").write(ai_answer)
-
-        st.session_state.messages.append(
-            ("assistant", ai_answer)
-        )
+    st.chat_message("assistant").write(answer)
+    st.session_state.chat_history.append((user_input, answer))
