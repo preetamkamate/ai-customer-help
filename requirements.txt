@@ -1,8 +1,7 @@
 streamlit
-transformers
 sentence-transformers
 faiss-cpu
 torch
-openai
 sentencepiece
 accelerate
+transformers==4.41.2
