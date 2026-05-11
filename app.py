@@ -4,294 +4,233 @@ from sentence_transformers import SentenceTransformer
 import faiss
 import numpy as np
 
-# -------- PAGE --------
+# ---------------- PAGE ----------------
 st.set_page_config(page_title="HACSS", page_icon="💬")
 
-# -------- LOAD MODELS --------
+# ---------------- LOAD MODELS ----------------
 @st.cache_resource
 def load_models():
+
     tokenizer = AutoTokenizer.from_pretrained("google/flan-t5-small")
-    model = AutoModelForSeq2SeqLM.from_pretrained("google/flan-t5-small")
-    embed = SentenceTransformer("all-MiniLM-L6-v2")
-    return tokenizer, model, embed
+
+    model = AutoModelForSeq2SeqLM.from_pretrained(
+        "google/flan-t5-small"
+    )
+
+    embed_model = SentenceTransformer(
+        "all-MiniLM-L6-v2"
+    )
+
+    return tokenizer, model, embed_model
 
 tokenizer, model, embed_model = load_models()
 
-# -------- BASE DATA --------
-data = [
+# ---------------- DATA ----------------
+data = {
 
-# ORDER
-{
-    "text": "track order where is my order order status",
-    "type": "Orders",
-    "keywords": ["order", "track"],
-    "answer": """1. Open App
-2. Go to My Orders
-3. Select your order
-4. Click Track Order"""
-},
+    "Payment": [
 
-{
-    "text": "cancel order how to cancel my order",
-    "type": "Orders",
-    "keywords": ["cancel"],
-    "answer": """1. Open App
-2. Go to My Orders
-3. Select order
-4. Click Cancel"""
-},
-
-{
-    "text": "order delayed delivery late",
-    "type": "Orders",
-    "keywords": ["delivery", "delay"],
-    "answer": "Your order may be delayed due to logistics issues."
-},
-
-# PAYMENT
-{
-    "text": "payment failed refund money deducted",
-    "type": "Payment",
-    "keywords": ["payment", "refund"],
-    "answer": """1. Wait 3-5 working days
+        {
+            "keywords": ["refund", "money", "payment failed"],
+            "answer": """1. Wait 3-5 working days
 2. Check bank/wallet
 3. Contact support if needed"""
-},
+        },
 
-{
-    "text": "payment methods available",
-    "type": "Payment",
-    "keywords": ["payment"],
-    "answer": "We support UPI, debit/credit cards, and net banking."
-},
+        {
+            "keywords": ["charged twice", "double payment"],
+            "answer": "Refund for extra payment will be processed automatically."
+        }
 
-# ACCOUNT
-{
-    "text": "forgot password reset password",
-    "type": "Account",
-    "keywords": ["password"],
-    "answer": """1. Click Forgot Password
-2. Verify OTP
+    ],
+
+    "Order": [
+
+        {
+            "keywords": ["track order", "where is my order"],
+            "answer": """1. Open app
+2. Go to My Orders
+3. Click Track Order"""
+        },
+
+        {
+            "keywords": ["cancel order"],
+            "answer": """1. Open My Orders
+2. Select Order
+3. Click Cancel"""
+        }
+
+    ],
+
+    "Account": [
+
+        {
+            "keywords": ["reset password", "forgot password"],
+            "answer": """1. Click Forgot Password
+2. Verify mobile/email
 3. Set new password"""
-},
+        }
 
-{
-    "text": "update profile change name",
-    "type": "Account",
-    "keywords": ["profile"],
-    "answer": "Go to Account Settings to update your profile."
-},
+    ]
 
-# DELIVERY
-{
-    "text": "delivery time how long shipping",
-    "type": "Delivery",
-    "keywords": ["delivery"],
-    "answer": "Delivery usually takes 3-7 days."
-},
-
-{
-    "text": "delivery charges shipping cost",
-    "type": "Delivery",
-    "keywords": ["shipping"],
-    "answer": "Shipping charges depend on your location."
-},
-
-# BUY
-{
-    "text": "buy headphones recommend headphones",
-    "type": "Buy",
-    "keywords": ["headphones", "buy"],
-    "answer": "Recommended Product: Wireless Headphones - ₹999"
-},
-
-{
-    "text": "buy shoes recommend shoes",
-    "type": "Buy",
-    "keywords": ["shoes"],
-    "answer": "Recommended Product: Sports Shoes - ₹1499"
-},
-
-{
-    "text": "best mobile under 20000",
-    "type": "Buy",
-    "keywords": ["mobile"],
-    "answer": "Recommended Product: Smartphone under ₹20,000"
 }
 
-]
+# ---------------- CREATE VECTOR DATA ----------------
+texts = []
+answers = []
 
-# -------- AUTO EXPAND DATA --------
-extra_data = []
-topics = ["Orders", "Payment", "Delivery", "Account", "Buy"]
+for category in data:
 
-for i in range(100):
+    for item in data[category]:
 
-    extra_data.append({
+        for k in item["keywords"]:
 
-        "text": f"customer issue related to {topics[i % 5]} number {i}",
+            texts.append(k)
 
-        "type": topics[i % 5],
+            answers.append(item["answer"])
 
-        "keywords": [topics[i % 5].lower()],
-
-        "answer": f"This is system response for {topics[i % 5]} issue number {i}."
-
-    })
-
-data = data + extra_data
-
-# -------- VECTOR DB --------
-texts = [d["text"] for d in data]
-
+# ---------------- EMBEDDINGS ----------------
 vectors = embed_model.encode(texts)
 
 index = faiss.IndexFlatL2(vectors.shape[1])
 
 index.add(np.array(vectors))
 
-# -------- CHAT MEMORY --------
-if "chat_history" not in st.session_state:
-    st.session_state.chat_history = []
+# ---------------- CHAT MEMORY ----------------
+if "messages" not in st.session_state:
+    st.session_state.messages = []
 
-# -------- DEFAULT SECTION --------
-if "section" not in st.session_state:
-    st.session_state.section = "Orders"
+# ---------------- INTRO ----------------
+if "intro" not in st.session_state:
 
-# -------- AI FUNCTION --------
-def generate_ai(question, history):
+    st.session_state.intro = True
 
-    context = ""
+    st.session_state.messages.append(
+        (
+            "assistant",
+            "Hello! I am HACSS, your AI Customer Support Assistant. How can I help you today?"
+        )
+    )
 
-    for q, a in history[-3:]:
-        context += f"User: {q}\nAI: {a}\n"
+# ---------------- FLAN-T5 FUNCTION ----------------
+def generate_ai(question):
 
     prompt = f"""
-You are HACSS, a helpful customer support assistant.
+You are HACSS, an AI customer support assistant.
 
-Conversation:
-{context}
+Answer the user politely and clearly.
 
-User: {question}
+User Question:
+{question}
 
-AI:
+Answer:
 """
 
-    inputs = tokenizer(prompt, return_tensors="pt")
+    inputs = tokenizer(
+        prompt,
+        return_tensors="pt",
+        truncation=True,
+        max_length=256
+    )
 
     outputs = model.generate(
         **inputs,
-        max_length=80,
-        do_sample=True,
-        temperature=0.7
+        max_new_tokens=60,
+        temperature=0.7,
+        do_sample=True
     )
 
-    return tokenizer.decode(outputs[0], skip_special_tokens=True)
+    answer = tokenizer.decode(
+        outputs[0],
+        skip_special_tokens=True
+    )
 
-# -------- UI --------
-st.title("💬 Hybrid AI Customer Support System")
+    return answer
 
-st.subheader("Choose Support Section")
+# ---------------- UI ----------------
+st.title("💬 HACSS - Customer Support")
 
-col1, col2, col3, col4, col5 = st.columns(5)
+# ---------------- CATEGORY SELECT ----------------
+selected = st.selectbox(
+    "Select Issue Category",
+    list(data.keys())
+)
 
-with col1:
-    if st.button("📦 Orders"):
-        st.session_state.section = "Orders"
+st.write(f"### Selected: {selected}")
 
-with col2:
-    if st.button("💳 Payment"):
-        st.session_state.section = "Payment"
+# ---------------- SHOW CHAT ----------------
+for role, msg in st.session_state.messages:
 
-with col3:
-    if st.button("👤 Account"):
-        st.session_state.section = "Account"
+    st.chat_message(role).write(msg)
 
-with col4:
-    if st.button("🚚 Delivery"):
-        st.session_state.section = "Delivery"
-
-with col5:
-    if st.button("🛒 Buy"):
-        st.session_state.section = "Buy"
-
-st.success(f"Selected Section: {st.session_state.section}")
-
-# -------- INTRO --------
-if len(st.session_state.chat_history) == 0:
-
-    intro = "Hello! I am HACSS, your AI Customer Support Assistant. How can I help you today?"
-
-    st.session_state.chat_history.append(("HACSS", intro))
-
-# -------- SHOW CHAT --------
-for q, a in st.session_state.chat_history:
-
-    st.chat_message("user").write(q)
-
-    st.chat_message("assistant").write(a)
-
-# -------- USER INPUT --------
+# ---------------- INPUT ----------------
 user_input = st.chat_input("Ask your question...")
 
 if user_input:
+
+    st.session_state.messages.append(
+        ("user", user_input)
+    )
 
     st.chat_message("user").write(user_input)
 
     q = user_input.lower()
 
-    answer = None
+    found = False
 
-    # -------- GREETING --------
-    if q in ["hi", "hello", "hey"]:
+    # ---------------- KEYWORD MATCH ----------------
+    for item in data[selected]:
 
-        answer = "Hello! I am HACSS, your AI Customer Support Assistant. How can I help you today?"
+        for k in item["keywords"]:
 
-        st.chat_message("assistant").write(answer)
-
-        st.session_state.chat_history.append((user_input, answer))
-
-        st.stop()
-
-    # -------- KEYWORD MATCH --------
-    for item in data:
-
-        if item["type"] == st.session_state.section:
-
-            if any(word in q for word in item["keywords"]):
+            if k in q:
 
                 answer = item["answer"]
 
                 st.chat_message("assistant").write(answer)
 
-                st.session_state.chat_history.append((user_input, answer))
+                st.session_state.messages.append(
+                    ("assistant", answer)
+                )
 
-                st.stop()
+                found = True
 
-    # -------- VECTOR SEARCH --------
-    q_vec = embed_model.encode([user_input])
+                break
 
-    D, I = index.search(np.array(q_vec), 1)
+        if found:
+            break
 
-    score = D[0][0]
+    # ---------------- FAISS SEARCH ----------------
+    if not found:
 
-    result = data[I[0][0]]
+        q_vec = embed_model.encode([q])
 
-    if score < 1.5 and result["type"] == st.session_state.section:
+        D, I = index.search(np.array(q_vec), 1)
 
-        answer = result["answer"]
+        score = D[0][0]
 
-        st.chat_message("assistant").write(answer)
+        # LOWER = MORE SIMILAR
+        if score < 1.0:
 
-        st.session_state.chat_history.append((user_input, answer))
+            answer = answers[I[0][0]]
 
-        st.stop()
+            st.chat_message("assistant").write(answer)
 
-    # -------- AI FALLBACK --------
-    with st.spinner("Thinking..."):
+            st.session_state.messages.append(
+                ("assistant", answer)
+            )
 
-        answer = generate_ai(user_input, st.session_state.chat_history)
+            found = True
 
-    st.chat_message("assistant").write(answer)
+    # ---------------- FLAN-T5 AI ----------------
+    if not found:
 
-    st.session_state.chat_history.append((user_input, answer))
+        with st.spinner("HACSS is thinking..."):
+
+            ai_answer = generate_ai(user_input)
+
+        st.chat_message("assistant").write(ai_answer)
+
+        st.session_state.messages.append(
+            ("assistant", ai_answer)
+        )
