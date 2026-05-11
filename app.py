@@ -20,12 +20,13 @@ tokenizer, model, embed_model = load_models()
 # ---------------- DATA ----------------
 sections = {
 
+# ---------------- ORDERS ----------------
 "Orders": [
 
 {
 "text": "track order where is my order order status",
 "keywords": ["order", "track", "status"],
-"answer": """1. Open app
+"answer": """1. Open App
 2. Go to My Orders
 3. Select your order
 4. Click Track Order"""
@@ -34,19 +35,21 @@ sections = {
 {
 "text": "cancel order remove order",
 "keywords": ["cancel", "remove"],
-"answer": """1. Open app
+"answer": """1. Open App
 2. Go to My Orders
-3. Click Cancel Order"""
+3. Select order
+4. Click Cancel"""
 }
 
 ],
 
+# ---------------- PAYMENT ----------------
 "Payment": [
 
 {
 "text": "payment failed refund money deducted",
 "keywords": ["payment", "refund"],
-"answer": """1. Wait 3-5 days
+"answer": """1. Wait 3-5 working days
 2. Check bank/wallet
 3. Contact support if needed"""
 },
@@ -59,6 +62,7 @@ sections = {
 
 ],
 
+# ---------------- ACCOUNT ----------------
 "Account": [
 
 {
@@ -72,17 +76,18 @@ sections = {
 {
 "text": "delete account permanently",
 "keywords": ["delete", "account"],
-"answer": "Please contact support to delete your account."
+"answer": "Please contact customer support to delete your account."
 }
 
 ],
 
+# ---------------- DELIVERY ----------------
 "Delivery": [
 
 {
 "text": "delivery delayed late order",
 "keywords": ["delivery", "delay", "late"],
-"answer": "Delivery may be delayed due to logistics or weather."
+"answer": "Delivery may be delayed due to logistics or weather conditions."
 },
 
 {
@@ -91,15 +96,65 @@ sections = {
 "answer": "Shipping charges depend on location."
 }
 
+],
+
+# ---------------- BUY ----------------
+"Buy": [
+
+{
+"text": "buy headphones recommend headphones",
+"keywords": ["headphones", "buy"],
+"answer": "Recommended Product: Wireless Headphones - ₹999"
+},
+
+{
+"text": "buy shoes recommend shoes",
+"keywords": ["shoes"],
+"answer": "Recommended Product: Sports Shoes - ₹1499"
+},
+
+{
+"text": "best mobile under 20000",
+"keywords": ["mobile", "phone"],
+"answer": "Recommended Product: Smartphone under ₹20,000"
+}
+
 ]
 
 }
 
-# ---------------- SELECT SECTION ----------------
-selected_section = st.sidebar.selectbox(
-"Select Issue Section",
-list(sections.keys())
-)
+# ---------------- FRONT SECTION SELECT ----------------
+st.subheader("Choose Support Section")
+
+col1, col2, col3, col4, col5 = st.columns(5)
+
+with col1:
+    if st.button("📦 Orders"):
+        st.session_state.selected_section = "Orders"
+
+with col2:
+    if st.button("💳 Payment"):
+        st.session_state.selected_section = "Payment"
+
+with col3:
+    if st.button("👤 Account"):
+        st.session_state.selected_section = "Account"
+
+with col4:
+    if st.button("🚚 Delivery"):
+        st.session_state.selected_section = "Delivery"
+
+with col5:
+    if st.button("🛒 Buy"):
+        st.session_state.selected_section = "Buy"
+
+# ---------------- DEFAULT SECTION ----------------
+if "selected_section" not in st.session_state:
+    st.session_state.selected_section = "Orders"
+
+selected_section = st.session_state.selected_section
+
+st.success(f"Selected: {selected_section}")
 
 data = sections[selected_section]
 
@@ -116,7 +171,7 @@ index.add(np.array(vectors))
 if "chat_history" not in st.session_state:
     st.session_state.chat_history = []
 
-# ---------------- INTRO ----------------
+# ---------------- INTRO MESSAGE ----------------
 if "started" not in st.session_state:
 
     st.session_state.started = True
@@ -141,7 +196,7 @@ Conversation:
 
 User: {question}
 
-Answer politely:
+Answer politely and clearly:
 """
 
     inputs = tokenizer(prompt, return_tensors="pt")
@@ -156,9 +211,7 @@ Answer politely:
     return tokenizer.decode(outputs[0], skip_special_tokens=True)
 
 # ---------------- UI ----------------
-st.title("💬 HACSS - Customer Support")
-
-st.subheader(f"Selected: {selected_section}")
+st.title("💬 HACSS - Hybrid AI Customer Support System")
 
 # ---------------- SHOW CHAT ----------------
 for role, msg in st.session_state.chat_history:
@@ -169,7 +222,7 @@ for role, msg in st.session_state.chat_history:
     else:
         st.chat_message("assistant").write(msg)
 
-# ---------------- INPUT ----------------
+# ---------------- USER INPUT ----------------
 user_input = st.chat_input("Ask your question...")
 
 if user_input:
