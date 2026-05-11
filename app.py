@@ -3,15 +3,29 @@ import numpy as np
 import faiss
 
 from sentence_transformers import SentenceTransformer
+
+from transformers import T5Tokenizer
+from transformers import T5ForConditionalGeneration
 from transformers import pipeline
 
-# ---------------- LOAD MODELS ----------------
+
+# ---------------- LOAD EMBEDDING MODEL ----------------
 embed_model = SentenceTransformer('all-MiniLM-L6-v2')
+
+
+# ---------------- LOAD FLAN-T5 ----------------
+model_name = "google/flan-t5-small"
+
+tokenizer = T5Tokenizer.from_pretrained(model_name)
+
+model = T5ForConditionalGeneration.from_pretrained(model_name)
 
 generator = pipeline(
     "text2text-generation",
-    model="google/flan-t5-small"
+    model=model,
+    tokenizer=tokenizer
 )
+
 
 # ---------------- DATA ----------------
 sections = {
@@ -65,6 +79,7 @@ sections = {
         }
     ]
 }
+
 
 # ---------------- BUILD INDEX ----------------
 def build_index(data):
@@ -136,7 +151,7 @@ else:
 
     st.write(f"### Selected: {st.session_state.section}")
 
-    # CHANGE BUTTON
+    # CHANGE SECTION
     if st.button("🔄 Change Issue"):
 
         st.session_state.section = None
@@ -144,14 +159,14 @@ else:
 
         st.rerun()
 
-    # SHOW OLD CHAT
+    # SHOW CHAT
     for q, a in st.session_state.chat:
 
         st.chat_message("user").write(q)
 
         st.chat_message("assistant").write(a)
 
-    # INPUT
+    # USER INPUT
     user_input = st.chat_input("Ask your question...")
 
     if user_input:
@@ -167,14 +182,14 @@ else:
         if not answer:
 
             prompt = f"""
-You are a helpful customer support assistant.
+You are a customer support assistant.
 
 Section: {st.session_state.section}
 
 User Question:
 {user_input}
 
-Give a short and clear support reply.
+Give a short helpful reply.
 """
 
             result = generator(
