@@ -1,12 +1,19 @@
 import streamlit as st
 import numpy as np
 import faiss
-from sentence_transformers import SentenceTransformer
 
-# Load embedding model
+from sentence_transformers import SentenceTransformer
+from transformers import pipeline
+
+# ---------------- LOAD MODELS ----------------
 embed_model = SentenceTransformer('all-MiniLM-L6-v2')
 
-# -------- DATA --------
+generator = pipeline(
+    "text2text-generation",
+    model="google/flan-t5-small"
+)
+
+# ---------------- DATA ----------------
 sections = {
 
     "Order": [
@@ -28,6 +35,7 @@ sections = {
 4. Enter details
 5. Place your order"""
         },
+
         {
             "text": "after adding cart what next",
             "answer": """1. Open cart
@@ -58,21 +66,23 @@ sections = {
     ]
 }
 
-# -------- BUILD INDEX --------
+# ---------------- BUILD INDEX ----------------
 def build_index(data):
 
     texts = [d["text"] for d in data]
 
     vectors = embed_model.encode(texts)
 
+    vectors = np.array(vectors).astype("float32")
+
     index = faiss.IndexFlatL2(vectors.shape[1])
 
-    index.add(np.array(vectors).astype("float32"))
+    index.add(vectors)
 
     return index
 
 
-# -------- SEARCH FUNCTION --------
+# ---------------- SEARCH FUNCTION ----------------
 def search(data, question):
 
     index = build_index(data)
@@ -89,7 +99,7 @@ def search(data, question):
     return None
 
 
-# -------- SESSION --------
+# ---------------- SESSION ----------------
 if "section" not in st.session_state:
     st.session_state.section = None
 
@@ -97,11 +107,11 @@ if "chat" not in st.session_state:
     st.session_state.chat = []
 
 
-# -------- UI --------
+# ---------------- UI ----------------
 st.title("💬 HACSS - Customer Support")
 
 
-# -------- STEP 1: SELECT SECTION --------
+# ---------------- STEP 1 : SELECT SECTION ----------------
 if st.session_state.section is None:
 
     st.write("### Choose your issue:")
@@ -121,25 +131,27 @@ if st.session_state.section is None:
         st.session_state.section = "Account"
 
 
-# -------- STEP 2: CHAT --------
+# ---------------- STEP 2 : CHAT ----------------
 else:
 
     st.write(f"### Selected: {st.session_state.section}")
 
-    # Change section button
+    # CHANGE BUTTON
     if st.button("🔄 Change Issue"):
+
         st.session_state.section = None
         st.session_state.chat = []
+
         st.rerun()
 
-    # Show old chat
+    # SHOW OLD CHAT
     for q, a in st.session_state.chat:
 
         st.chat_message("user").write(q)
 
         st.chat_message("assistant").write(a)
 
-    # User input
+    # INPUT
     user_input = st.chat_input("Ask your question...")
 
     if user_input:
@@ -148,13 +160,33 @@ else:
 
         data = sections[st.session_state.section]
 
+        # SEARCH FAQ
         answer = search(data, user_input)
 
+        # FLAN-T5 FALLBACK
         if not answer:
-            answer = """I didn't understand clearly.
 
-Try asking related to this section."""
+            prompt = f"""
+You are a helpful customer support assistant.
 
+Section: {st.session_state.section}
+
+User Question:
+{user_input}
+
+Give a short and clear support reply.
+"""
+
+            result = generator(
+                prompt,
+                max_length=80,
+                do_sample=True
+            )
+
+            answer = result[0]["generated_text"]
+
+        # SHOW ANSWER
         st.chat_message("assistant").write(answer)
 
+        # SAVE CHAT
         st.session_state.chat.append((user_input, answer))
