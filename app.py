@@ -151,33 +151,22 @@ def search(data, question):
 def generate_ai(question):
 
     prompt = f"""
-You are HACSS, a professional customer support assistant.
-
-Rules:
-- Give short and clear answers
-- Be polite and helpful
-- Answer like real customer support
-- Keep answers practical and meaningful
-
-Customer Question:
-{question}
-
-Helpful Support Reply:
+Customer support question: {question}
+Give a short helpful reply.
 """
 
     inputs = tokenizer(
         prompt,
         return_tensors="pt",
         truncation=True,
-        max_length=256
+        max_length=128
     )
 
     outputs = model.generate(
         **inputs,
-        max_new_tokens=60,
-        temperature=0.3,
-        do_sample=True,
-        repetition_penalty=1.2
+        max_new_tokens=40,
+        temperature=0.2,
+        do_sample=True
     )
 
     answer = tokenizer.decode(
@@ -185,13 +174,24 @@ Helpful Support Reply:
         skip_special_tokens=True
     ).strip()
 
-    # -------- BAD RESPONSE FILTER --------
+    # -------- CLEAN BAD OUTPUT --------
+    bad_words = [
+        "answer like",
+        "customer support question",
+        "helpful reply"
+    ]
+
+    for w in bad_words:
+
+        if w in answer.lower():
+
+            answer = "Please contact customer support through the Help Center section."
+
     if len(answer) < 3:
 
-        answer = "Please contact customer support from the Help Center section."
+        answer = "Please contact customer support through the Help Center section."
 
     return answer
-
 # -------- SESSION --------
 if "section" not in st.session_state:
     st.session_state.section = None
