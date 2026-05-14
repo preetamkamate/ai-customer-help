@@ -1,8 +1,9 @@
 import streamlit as st
 from sentence_transformers import SentenceTransformer
-from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+from transformers import AutoTokenizer, AutoModelForCausalLM
 import faiss
 import numpy as np
+import torch
 import time
 
 # -------- PAGE --------
@@ -15,21 +16,21 @@ def load_embed_model():
 
 embed_model = load_embed_model()
 
-# -------- LOAD FLAN-T5 --------
+# -------- LOAD DIALOGPT --------
 @st.cache_resource
-def load_flan():
+def load_ai():
 
     tokenizer = AutoTokenizer.from_pretrained(
-        "google/flan-t5-large"
+        "microsoft/DialoGPT-medium"
     )
 
-    model = AutoModelForSeq2SeqLM.from_pretrained(
-        "google/flan-t5-large"
+    model = AutoModelForCausalLM.from_pretrained(
+        "microsoft/DialoGPT-medium"
     )
 
     return tokenizer, model
 
-tokenizer, model = load_flan()
+tokenizer, model = load_ai()
 
 # -------- HEADER --------
 st.markdown(
@@ -147,58 +148,38 @@ def search(data, question):
 
     return None
 
-# -------- FLAN-T5 AI --------
+# -------- AI CHAT FUNCTION --------
 def generate_ai(question):
 
     prompt = f"""
-You are HACSS, a professional customer support assistant for an ecommerce app.
+You are HACSS, a helpful customer support assistant.
 
-Instructions:
-- Reply like real customer support
-- Give meaningful answers
-- Keep answers short and clear
-- Never generate random words
-- Never generate symbols like -0
-- Never say meaningless text
-- Be polite and practical
-
-Customer Question:
-{question}
-
-Helpful Support Reply:
+User: {question}
+Assistant:
 """
 
-    inputs = tokenizer(
-        prompt,
-        return_tensors="pt",
-        truncation=True,
-        max_length=256
+    inputs = tokenizer.encode(
+        prompt + tokenizer.eos_token,
+        return_tensors="pt"
     )
 
     outputs = model.generate(
-        **inputs,
-       max_new_tokens=80,
-       temperature=0.4,
-       do_sample=True,
-       repetition_penalty=1.2
+        inputs,
+        max_length=120,
+        pad_token_id=tokenizer.eos_token_id,
+        temperature=0.7,
+        do_sample=True
     )
 
     answer = tokenizer.decode(
-        outputs[0],
+        outputs[:, inputs.shape[-1]:][0],
         skip_special_tokens=True
-    ).strip()
+    )
 
-    # -------- BAD RESPONSE FILTER --------
-    bad_responses = [
-        "-0",
-        "",
-        "iam luv",
-        "if you call in support"
-    ]
+    # -------- FALLBACK FILTER --------
+    if len(answer.strip()) < 3:
 
-    if len(answer) < 5 or answer.lower() in bad_responses:
-
-        answer = """Please contact customer support from the Help Center section in the app."""
+        answer = "Please contact customer support from the Help Center section."
 
     return answer
 
