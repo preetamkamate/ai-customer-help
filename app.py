@@ -20,11 +20,11 @@ embed_model = load_embed_model()
 def load_flan():
 
     tokenizer = AutoTokenizer.from_pretrained(
-        "google/flan-t5-small"
+        "google/flan-t5-large"
     )
 
     model = AutoModelForSeq2SeqLM.from_pretrained(
-        "google/flan-t5-small"
+        "google/flan-t5-large"
     )
 
     return tokenizer, model
@@ -177,10 +177,10 @@ Helpful Support Reply:
 
     outputs = model.generate(
         **inputs,
-        max_new_tokens=60,
-        temperature=0.3,
-        do_sample=True,
-        repetition_penalty=1.5
+       max_new_tokens=80,
+       temperature=0.4,
+       do_sample=True,
+       repetition_penalty=1.2
     )
 
     answer = tokenizer.decode(
