@@ -108,7 +108,7 @@ sections = {
     "Payment": [
 
         {
-            "text": "payment failed refund money deducted refund not received",
+            "text": "payment failed refund money deducted refund not received when i get my refund",
             "answer": """1. Wait 3–5 working days
 2. Check bank/wallet
 3. Contact support if needed"""
@@ -288,6 +288,8 @@ else:
 
         data = sections[st.session_state.section]
 
+        q = user_input.lower().strip()
+
         # -------- GREETINGS --------
         greetings = [
             "hi",
@@ -297,9 +299,19 @@ else:
             "hii"
         ]
 
-        if user_input.lower().strip() in greetings:
+        thanks_words = [
+            "thanks",
+            "thank you",
+            "thx"
+        ]
+
+        if q in greetings:
 
             answer = "Hello! I am HACSS 🤖 How can I help you today?"
+
+        elif q in thanks_words:
+
+            answer = "You're welcome! 😊 Happy to help."
 
         else:
 
