@@ -53,6 +53,7 @@ st.markdown(
 sections = {
 
     "Order": [
+
         {
             "text": "track order where is my order not delivered late order status",
             "answer": """1. Open My Orders
@@ -66,10 +67,18 @@ sections = {
             "answer": """1. Open My Orders
 2. Select your order
 3. Click Cancel Order"""
+        },
+
+        {
+            "text": "support contact customer care help",
+            "answer": """1. Open Help Center
+2. Contact customer support
+3. Explain your issue"""
         }
     ],
 
     "Buy": [
+
         {
             "text": "how to order buy product purchase food ice cream",
             "answer": """1. Search product
@@ -86,12 +95,20 @@ sections = {
 3. Enter delivery details
 4. Select payment
 5. Confirm order"""
+        },
+
+        {
+            "text": "support contact customer care help",
+            "answer": """1. Open Help Center
+2. Contact customer support
+3. Explain your issue"""
         }
     ],
 
     "Payment": [
+
         {
-            "text": "payment failed refund money deducted",
+            "text": "payment failed refund money deducted refund not received",
             "answer": """1. Wait 3–5 working days
 2. Check bank/wallet
 3. Contact support if needed"""
@@ -100,10 +117,18 @@ sections = {
         {
             "text": "double payment charged twice",
             "answer": "Refund for extra payment will be processed automatically."
+        },
+
+        {
+            "text": "support contact customer care help",
+            "answer": """1. Open Help Center
+2. Contact customer support
+3. Explain your issue"""
         }
     ],
 
     "Account": [
+
         {
             "text": "forgot password reset login issue",
             "answer": """1. Go to login page
@@ -115,6 +140,13 @@ sections = {
         {
             "text": "delete account remove account",
             "answer": "Please contact customer support to permanently delete your account."
+        },
+
+        {
+            "text": "support contact customer care help",
+            "answer": """1. Open Help Center
+2. Contact customer support
+3. Explain your issue"""
         }
     ]
 }
@@ -192,6 +224,7 @@ Give a short helpful reply.
         answer = "Please contact customer support through the Help Center section."
 
     return answer
+
 # -------- SESSION --------
 if "section" not in st.session_state:
     st.session_state.section = None
@@ -255,53 +288,25 @@ else:
 
         data = sections[st.session_state.section]
 
-        # -------- CUSTOM SUPPORT RESPONSES --------
-        custom_responses = {
+        # -------- GREETINGS --------
+        greetings = [
+            "hi",
+            "hello",
+            "hey",
+            "hlo",
+            "hii"
+        ]
 
-            "hi":
-            "Hello! I am HACSS 🤖 How can I help you today?",
+        if user_input.lower().strip() in greetings:
 
-            "hello":
-            "Hello! I am HACSS 🤖 How can I help you today?",
-
-            "hey":
-            "Hello! I am HACSS 🤖 How can I help you today?",
-
-            "hlo":
-            "Hello! I am HACSS 🤖 How can I help you today?",
-
-            "hii":
-            "Hello! I am HACSS 🤖 How can I help you today?",
-
-            "support":
-            "You can contact customer support from the Help Center section in the app.",
-
-            "contact support":
-            "Please open the Help Center section to contact customer support.",
-
-            "customer care":
-            "Customer support is available in the Help section of the app.",
-
-            "contact number":
-            "Support contact details are available in the Help Center section.",
-
-            "help":
-            "Please describe your issue. I will try to help you."
-        }
-
-        q = user_input.lower().strip()
-
-        # -------- FIXED RESPONSE --------
-        if q in custom_responses:
-
-            answer = custom_responses[q]
+            answer = "Hello! I am HACSS 🤖 How can I help you today?"
 
         else:
 
             # -------- SEARCH --------
             answer = search(data, user_input)
 
-            # -------- FLAN-T5 FALLBACK --------
+            # -------- AI FALLBACK --------
             if not answer:
 
                 with st.spinner("HACSS is thinking..."):
