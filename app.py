@@ -33,27 +33,16 @@ h1 {
     line-height: 1.1;
 }
 .stButton > button {
-
     width: 100%;
-    min-height: 220px;
-
-    border-radius: 30px;
-
+    height: 150px;
+    border-radius: 25px;
     border: none;
-
     background: white;
-
     color: #111827;
-
-    font-size: 28px;
-
+    font-size: 24px;
     font-weight: 700;
-
-    box-shadow: 0 8px 25px rgba(0,0,0,0.08);
-
+    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
     transition: 0.3s;
-
-    padding: 20px;
 }
 .stButton > button:hover {
     transform: translateY(-5px);
@@ -223,45 +212,84 @@ if "chat" not in st.session_state:
     st.session_state.chat = []
 # -------- HERO SECTION --------
 st.markdown("""
+<div style="padding-top:20px;">
+<div style="
+background:white;
+padding:12px 24px;
+border-radius:20px;
+width:fit-content;
+box-shadow:0 4px 15px rgba(0,0,0,0.08);
+font-size:20px;
+font-weight:600;
+color:#6C63FF;
+margin-bottom:25px;
+">
+Hello! I am HACSS 😊
+</div>
 <div style="
 display:flex;
 justify-content:space-between;
 align-items:center;
-padding-top:30px;
-padding-bottom:30px;
 ">
-
 <div>
-
 <h1 style="
-font-size:70px;
+font-size:72px;
 font-weight:800;
 color:#111827;
 line-height:1.1;
 margin-bottom:10px;
 ">
-
 Your <span style="color:#6C63FF;">AI</span><br>
 Customer Support Assistant
-
 </h1>
-
 <p style="
 font-size:24px;
 color:#6b7280;
 ">
 How can I help you today?
 </p>
-
 </div>
-
-<div>
-
+<div style="position:relative;">
 <img src="https://cdn-icons-png.flaticon.com/512/4712/4712109.png"
 width="250">
-
+<div style="
+position:absolute;
+top:-20px;
+right:0;
+background:#6C63FF;
+padding:14px 20px;
+border-radius:20px;
+color:white;
+font-size:18px;
+font-weight:600;
+box-shadow:0 4px 15px rgba(0,0,0,0.12);
+">
+💬 Messages
 </div>
-
+<div style="
+position:absolute;
+top:80px;
+right:-60px;
+background:#60A5FA;
+padding:14px 20px;
+border-radius:20px;
+color:white;
+font-size:18px;
+font-weight:600;
+box-shadow:0 4px 15px rgba(0,0,0,0.12);
+transform:rotate(-8deg);
+">
+📩 Support
+</div>
+<img src="https://cdn-icons-png.flaticon.com/512/628/628324.png"
+width="120"
+style="
+position:absolute;
+bottom:-40px;
+right:-20px;
+">
+</div>
+</div>
 </div>
 """, unsafe_allow_html=True)
 # -------- STEP 1 --------
@@ -271,16 +299,16 @@ if st.session_state.section is None:
         unsafe_allow_html=True
     )
     col1, col2, col3, col4 = st.columns(4)
-    if col1.button("📦\nOrder"):
+    if col1.button("📦\n\nOrder\n\nTrack and manage orders"):
         st.session_state.section = "Order"
         st.rerun()
-    if col2.button("🛒\nBuy"):
+    if col2.button("🛒\n\nBuy\n\nPurchase products easily"):
         st.session_state.section = "Buy"
         st.rerun()
-    if col3.button("💳\nPayment"):
+    if col3.button("💳\n\nPayment\n\nRefunds and transactions"):
         st.session_state.section = "Payment"
         st.rerun()
-    if col4.button("👤\nAccount"):
+    if col4.button("👤\n\nAccount\n\nManage your profile"):
         st.session_state.section = "Account"
         st.rerun()
 # -------- CHAT --------
