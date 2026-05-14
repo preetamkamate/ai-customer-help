@@ -2,6 +2,7 @@ import streamlit as st
 from sentence_transformers import SentenceTransformer
 import faiss
 import numpy as np
+import time
 
 # -------- PAGE --------
 st.set_page_config(page_title="HACSS", page_icon="💬")
@@ -12,6 +13,24 @@ def load_model():
     return SentenceTransformer("all-MiniLM-L6-v2")
 
 embed_model = load_model()
+
+# -------- AMAZON STYLE HEADER --------
+st.markdown(
+    """
+    <div style="
+    background-color:#232F3E;
+    padding:15px;
+    border-radius:10px;
+    color:white;
+    text-align:center;
+    font-size:22px;
+    font-weight:bold;">
+    Hello! I am HACSS 🤖 <br>
+    Your AI Customer Support Assistant
+    </div>
+    """,
+    unsafe_allow_html=True
+)
 
 # -------- DATA --------
 sections = {
@@ -165,7 +184,21 @@ else:
 
 Try asking related to this section."""
 
-        # SHOW ANSWER
-        st.chat_message("assistant").write(answer)
+        # -------- TYPING EFFECT --------
+        with st.chat_message("assistant"):
+
+            message = st.empty()
+
+            full_text = ""
+
+            for char in answer:
+
+                full_text += char
+
+                message.markdown(full_text + "▌")
+
+                time.sleep(0.01)
+
+            message.markdown(full_text)
 
         st.session_state.chat.append((user_input, answer))
