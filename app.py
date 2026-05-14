@@ -151,37 +151,54 @@ def search(data, question):
 def generate_ai(question):
 
     prompt = f"""
-You are HACSS, a professional customer support assistant.
+You are HACSS, a professional customer support assistant for an ecommerce app.
 
-Rules:
-- Give short and clear answers
-- Be polite and helpful
-- Answer like real customer support
-- Do not say you are an AI model
-- Keep answers practical and simple
+Instructions:
+- Reply like real customer support
+- Give meaningful answers
+- Keep answers short and clear
+- Never generate random words
+- Never generate symbols like -0
+- Never say meaningless text
+- Be polite and practical
 
-User Question:
+Customer Question:
 {question}
 
-Answer:
+Helpful Support Reply:
 """
 
     inputs = tokenizer(
         prompt,
-        return_tensors="pt"
+        return_tensors="pt",
+        truncation=True,
+        max_length=256
     )
 
     outputs = model.generate(
         **inputs,
-        max_new_tokens=80,
-        temperature=0.7,
-        do_sample=True
+        max_new_tokens=60,
+        temperature=0.3,
+        do_sample=True,
+        repetition_penalty=1.5
     )
 
     answer = tokenizer.decode(
         outputs[0],
         skip_special_tokens=True
-    )
+    ).strip()
+
+    # -------- BAD RESPONSE FILTER --------
+    bad_responses = [
+        "-0",
+        "",
+        "iam luv",
+        "if you call in support"
+    ]
+
+    if len(answer) < 5 or answer.lower() in bad_responses:
+
+        answer = """Please contact customer support from the Help Center section in the app."""
 
     return answer
 
@@ -251,7 +268,7 @@ else:
         # -------- SEARCH --------
         answer = search(data, user_input)
 
-        # -------- FLAN-T5 FALLBACK --------
+        # -------- AI FALLBACK --------
         if not answer:
 
             with st.spinner("HACSS is thinking..."):
