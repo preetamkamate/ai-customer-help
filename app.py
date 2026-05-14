@@ -97,6 +97,22 @@ p {
     color: #111827 !important;
 }
 
+/* FORCE CHAT TEXT BLACK */
+[data-testid="stChatMessage"] * {
+
+    color: #111827 !important;
+
+    opacity: 1 !important;
+}
+
+/* MARKDOWN */
+.stMarkdown,
+.stMarkdown p,
+.stMarkdown li {
+
+    color: #111827 !important;
+}
+
 /* INPUT */
 .stChatInput input {
 
