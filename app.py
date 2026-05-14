@@ -1,5 +1,6 @@
 import streamlit as st
 from sentence_transformers import SentenceTransformer
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 import faiss
 import numpy as np
 import time
@@ -7,14 +8,30 @@ import time
 # -------- PAGE --------
 st.set_page_config(page_title="HACSS", page_icon="💬")
 
-# -------- LOAD MODEL --------
+# -------- LOAD EMBEDDING MODEL --------
 @st.cache_resource
-def load_model():
+def load_embed_model():
     return SentenceTransformer("all-MiniLM-L6-v2")
 
-embed_model = load_model()
+embed_model = load_embed_model()
 
-# -------- AMAZON STYLE HEADER --------
+# -------- LOAD FLAN-T5 --------
+@st.cache_resource
+def load_flan():
+
+    tokenizer = AutoTokenizer.from_pretrained(
+        "google/flan-t5-small"
+    )
+
+    model = AutoModelForSeq2SeqLM.from_pretrained(
+        "google/flan-t5-small"
+    )
+
+    return tokenizer, model
+
+tokenizer, model = load_flan()
+
+# -------- HEADER --------
 st.markdown(
     """
     <div style="
@@ -37,11 +54,18 @@ sections = {
 
     "Order": [
         {
-            "text": "track order where is my order not delivered late",
+            "text": "track order where is my order not delivered late order status",
             "answer": """1. Open My Orders
 2. Check order status
 3. Track delivery
 4. Contact support if delayed"""
+        },
+
+        {
+            "text": "cancel order remove order",
+            "answer": """1. Open My Orders
+2. Select your order
+3. Click Cancel Order"""
         }
     ],
 
@@ -71,6 +95,11 @@ sections = {
             "answer": """1. Wait 3–5 working days
 2. Check bank/wallet
 3. Contact support if needed"""
+        },
+
+        {
+            "text": "double payment charged twice",
+            "answer": "Refund for extra payment will be processed automatically."
         }
     ],
 
@@ -81,6 +110,11 @@ sections = {
 2. Click Forgot Password
 3. Enter details
 4. Reset password"""
+        },
+
+        {
+            "text": "delete account remove account",
+            "answer": "Please contact customer support to permanently delete your account."
         }
     ]
 }
@@ -108,9 +142,48 @@ def search(data, question):
     D, I = index.search(np.array(q_vec), 1)
 
     if D[0][0] < 1.2:
+
         return data[I[0][0]]["answer"]
 
     return None
+
+# -------- FLAN-T5 AI --------
+def generate_ai(question):
+
+    prompt = f"""
+You are HACSS, a professional customer support assistant.
+
+Rules:
+- Give short and clear answers
+- Be polite and helpful
+- Answer like real customer support
+- Do not say you are an AI model
+- Keep answers practical and simple
+
+User Question:
+{question}
+
+Answer:
+"""
+
+    inputs = tokenizer(
+        prompt,
+        return_tensors="pt"
+    )
+
+    outputs = model.generate(
+        **inputs,
+        max_new_tokens=80,
+        temperature=0.7,
+        do_sample=True
+    )
+
+    answer = tokenizer.decode(
+        outputs[0],
+        skip_special_tokens=True
+    )
+
+    return answer
 
 # -------- SESSION --------
 if "section" not in st.session_state:
@@ -175,14 +248,15 @@ else:
 
         data = sections[st.session_state.section]
 
+        # -------- SEARCH --------
         answer = search(data, user_input)
 
-        # NO MATCH
+        # -------- FLAN-T5 FALLBACK --------
         if not answer:
 
-            answer = """I didn't understand clearly.
+            with st.spinner("HACSS is thinking..."):
 
-Try asking related to this section."""
+                answer = generate_ai(user_input)
 
         # -------- TYPING EFFECT --------
         with st.chat_message("assistant"):
@@ -201,4 +275,5 @@ Try asking related to this section."""
 
             message.markdown(full_text)
 
+        # -------- SAVE CHAT --------
         st.session_state.chat.append((user_input, answer))
