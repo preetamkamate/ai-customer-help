@@ -1,9 +1,8 @@
 import streamlit as st
 from sentence_transformers import SentenceTransformer
-from transformers import AutoTokenizer, AutoModelForCausalLM
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 import faiss
 import numpy as np
-import torch
 import time
 
 # -------- PAGE --------
@@ -16,21 +15,21 @@ def load_embed_model():
 
 embed_model = load_embed_model()
 
-# -------- LOAD DIALOGPT --------
+# -------- LOAD FLAN-T5 --------
 @st.cache_resource
-def load_ai():
+def load_flan():
 
     tokenizer = AutoTokenizer.from_pretrained(
-        "microsoft/DialoGPT-medium"
+        "google/flan-t5-base"
     )
 
-    model = AutoModelForCausalLM.from_pretrained(
-        "microsoft/DialoGPT-medium"
+    model = AutoModelForSeq2SeqLM.from_pretrained(
+        "google/flan-t5-base"
     )
 
     return tokenizer, model
 
-tokenizer, model = load_ai()
+tokenizer, model = load_flan()
 
 # -------- HEADER --------
 st.markdown(
@@ -148,36 +147,46 @@ def search(data, question):
 
     return None
 
-# -------- AI CHAT FUNCTION --------
+# -------- FLAN-T5 AI --------
 def generate_ai(question):
 
     prompt = f"""
-You are HACSS, a helpful customer support assistant.
+You are HACSS, a professional customer support assistant.
 
-User: {question}
-Assistant:
+Rules:
+- Give short and clear answers
+- Be polite and helpful
+- Answer like real customer support
+- Keep answers practical and meaningful
+
+Customer Question:
+{question}
+
+Helpful Support Reply:
 """
 
-    inputs = tokenizer.encode(
-        prompt + tokenizer.eos_token,
-        return_tensors="pt"
+    inputs = tokenizer(
+        prompt,
+        return_tensors="pt",
+        truncation=True,
+        max_length=256
     )
 
     outputs = model.generate(
-        inputs,
-        max_length=120,
-        pad_token_id=tokenizer.eos_token_id,
-        temperature=0.7,
-        do_sample=True
+        **inputs,
+        max_new_tokens=60,
+        temperature=0.3,
+        do_sample=True,
+        repetition_penalty=1.2
     )
 
     answer = tokenizer.decode(
-        outputs[:, inputs.shape[-1]:][0],
+        outputs[0],
         skip_special_tokens=True
-    )
+    ).strip()
 
-    # -------- FALLBACK FILTER --------
-    if len(answer.strip()) < 3:
+    # -------- BAD RESPONSE FILTER --------
+    if len(answer) < 3:
 
         answer = "Please contact customer support from the Help Center section."
 
@@ -246,15 +255,58 @@ else:
 
         data = sections[st.session_state.section]
 
-        # -------- SEARCH --------
-        answer = search(data, user_input)
+        # -------- CUSTOM SUPPORT RESPONSES --------
+        custom_responses = {
 
-        # -------- AI FALLBACK --------
-        if not answer:
+            "hi":
+            "Hello! I am HACSS 🤖 How can I help you today?",
 
-            with st.spinner("HACSS is thinking..."):
+            "hello":
+            "Hello! I am HACSS 🤖 How can I help you today?",
 
-                answer = generate_ai(user_input)
+            "hey":
+            "Hello! I am HACSS 🤖 How can I help you today?",
+
+            "hlo":
+            "Hello! I am HACSS 🤖 How can I help you today?",
+
+            "hii":
+            "Hello! I am HACSS 🤖 How can I help you today?",
+
+            "support":
+            "You can contact customer support from the Help Center section in the app.",
+
+            "contact support":
+            "Please open the Help Center section to contact customer support.",
+
+            "customer care":
+            "Customer support is available in the Help section of the app.",
+
+            "contact number":
+            "Support contact details are available in the Help Center section.",
+
+            "help":
+            "Please describe your issue. I will try to help you."
+        }
+
+        q = user_input.lower().strip()
+
+        # -------- FIXED RESPONSE --------
+        if q in custom_responses:
+
+            answer = custom_responses[q]
+
+        else:
+
+            # -------- SEARCH --------
+            answer = search(data, user_input)
+
+            # -------- FLAN-T5 FALLBACK --------
+            if not answer:
+
+                with st.spinner("HACSS is thinking..."):
+
+                    answer = generate_ai(user_input)
 
         # -------- TYPING EFFECT --------
         with st.chat_message("assistant"):
