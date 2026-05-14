@@ -33,16 +33,27 @@ h1 {
     line-height: 1.1;
 }
 .stButton > button {
+
     width: 100%;
-    height: 150px;
-    border-radius: 25px;
+    min-height: 220px;
+
+    border-radius: 30px;
+
     border: none;
+
     background: white;
+
     color: #111827;
-    font-size: 24px;
+
+    font-size: 28px;
+
     font-weight: 700;
-    box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+
+    box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+
     transition: 0.3s;
+
+    padding: 20px;
 }
 .stButton > button:hover {
     transform: translateY(-5px);
@@ -212,9 +223,45 @@ if "chat" not in st.session_state:
     st.session_state.chat = []
 # -------- HERO SECTION --------
 st.markdown("""
-<div style='padding-top:20px;'>
-<h1>Your <span style="color:#6C63FF;">AI</span> Customer Support Assistant</h1>
-<p style='font-size:22px;color:#6b7280;'>How can I help you today?</p>
+<div style="
+display:flex;
+justify-content:space-between;
+align-items:center;
+padding-top:30px;
+padding-bottom:30px;
+">
+
+<div>
+
+<h1 style="
+font-size:70px;
+font-weight:800;
+color:#111827;
+line-height:1.1;
+margin-bottom:10px;
+">
+
+Your <span style="color:#6C63FF;">AI</span><br>
+Customer Support Assistant
+
+</h1>
+
+<p style="
+font-size:24px;
+color:#6b7280;
+">
+How can I help you today?
+</p>
+
+</div>
+
+<div>
+
+<img src="https://cdn-icons-png.flaticon.com/512/4712/4712109.png"
+width="250">
+
+</div>
+
 </div>
 """, unsafe_allow_html=True)
 # -------- STEP 1 --------
