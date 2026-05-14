@@ -1,7 +1,8 @@
 streamlit
-transformers
-torch
 sentence-transformers
+transformers
 faiss-cpu
-sentencepiece
+numpy
+torch
 accelerate
+safetensors
