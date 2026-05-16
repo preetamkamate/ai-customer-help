@@ -288,11 +288,16 @@ def search(data, question):
     return None
 
 # -------- FLAN-T5 --------
+
 def generate_ai(question):
 
     prompt = f"""
 Customer support question: {question}
-Give a short helpful reply.
+
+Rules:
+- Reply in one short sentence
+- If unsure, tell user to contact customer support
+- Do not generate random answers
 """
 
     inputs = tokenizer(
@@ -304,9 +309,9 @@ Give a short helpful reply.
 
     outputs = model.generate(
         **inputs,
-        max_new_tokens=40,
-        temperature=0.2,
-        do_sample=True
+        max_new_tokens=30,
+        temperature=0.1,
+        do_sample=False
     )
 
     answer = tokenizer.decode(
@@ -314,9 +319,29 @@ Give a short helpful reply.
         skip_special_tokens=True
     ).strip()
 
-    if len(answer) < 3:
+    # -------- STRICT FILTER --------
+    bad_words = [
+        "question",
+        "rules",
+        "reply",
+        "generate"
+    ]
 
-        answer = "Please contact customer support through the Help Center section."
+    if len(answer) < 5:
+
+        answer = (
+            "I could not understand properly. "
+            "Please contact our customer support team."
+        )
+
+    for word in bad_words:
+
+        if word in answer.lower():
+
+            answer = (
+                "I could not understand properly. "
+                "Please contact our customer support team."
+            )
 
     return answer
 
