@@ -9,126 +9,134 @@ import time
 # -------- PAGE --------
 st.set_page_config(
     page_title="HACSS",
-    page_icon="💬",
+    page_icon="🤖",
     layout="wide"
 )
 
-# -------- MODERN UI --------
+# -------- MODERN PREMIUM UI --------
 st.markdown("""
 <style>
 
-.stApp {
-    background: #f7f7fb;
-    color: #111827 !important;
+/* MAIN */
+.stApp{
+    background: linear-gradient(135deg,#eef2ff,#f8fafc);
+    color:#111827;
+    overflow-x:hidden;
 }
 
-header {
-    visibility: hidden;
+/* REMOVE STREAMLIT */
+header{visibility:hidden;}
+footer{visibility:hidden;}
+section[data-testid="stSidebar"]{display:none;}
+
+/* TEXT */
+html, body, [class*="css"]{
+    color:#111827 !important;
+    font-family: 'Segoe UI', sans-serif;
 }
 
-footer {
-    visibility: hidden;
+/* HERO CARD */
+.hero-card{
+    background:white;
+    border-radius:35px;
+    padding:45px;
+    box-shadow:0 10px 35px rgba(0,0,0,0.08);
+    margin-bottom:40px;
 }
 
-section[data-testid="stSidebar"] {
-    display: none;
+/* SMALL BADGE */
+.badge{
+    display:inline-block;
+    background:#6C63FF;
+    color:white;
+    padding:12px 22px;
+    border-radius:40px;
+    font-size:18px;
+    font-weight:600;
+    margin-bottom:25px;
 }
 
-/* ALL TEXT */
-html, body, [class*="css"] {
-    color: #111827 !important;
+/* TITLE */
+.hero-title{
+    font-size:72px;
+    font-weight:900;
+    line-height:1.05;
+    margin-bottom:15px;
 }
 
-/* HEADINGS */
-h1, h2, h3, h4 {
-    color: #111827 !important;
+.hero-title span{
+    color:#6C63FF;
 }
 
-/* PARAGRAPH */
-p {
-    color: #6b7280 !important;
+/* SUBTITLE */
+.hero-sub{
+    font-size:24px;
+    color:#6b7280;
 }
 
-/* BUTTON */
-.stButton > button {
-
-    width: 100%;
-    min-height: 220px;
-
-    border-radius: 30px;
-
-    border: none;
-
-    background: white;
-
-    color: #111827 !important;
-
-    font-size: 24px;
-
-    font-weight: 700;
-
-    box-shadow: 0 8px 25px rgba(0,0,0,0.08);
-
-    transition: 0.3s;
-
-    padding: 20px;
+/* BUTTONS */
+.stButton > button{
+    width:100%;
+    min-height:220px;
+    border:none;
+    border-radius:35px;
+    background:white;
+    color:#111827;
+    font-size:28px;
+    font-weight:700;
+    transition:0.3s;
+    box-shadow:0 10px 25px rgba(0,0,0,0.07);
 }
 
-.stButton > button:hover {
-
-    transform: translateY(-5px);
-
-    box-shadow: 0 10px 25px rgba(0,0,0,0.12);
+.stButton > button:hover{
+    transform:translateY(-8px);
+    box-shadow:0 18px 35px rgba(108,99,255,0.18);
+    border:2px solid #6C63FF;
 }
 
 /* CHAT */
-[data-testid="stChatMessage"] {
-
-    background: white;
-
-    border-radius: 20px;
-
-    padding: 15px;
-
-    margin-bottom: 12px;
-
-    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
-
-    color: #111827 !important;
+[data-testid="stChatMessage"]{
+    background:white;
+    border-radius:25px;
+    padding:18px;
+    margin-bottom:15px;
+    box-shadow:0 4px 15px rgba(0,0,0,0.05);
 }
 
-/* FORCE CHAT TEXT BLACK */
-[data-testid="stChatMessage"] * {
-
-    color: #111827 !important;
-
-    opacity: 1 !important;
+/* CHAT INPUT */
+.stChatInput input{
+    border-radius:30px !important;
+    border:2px solid #d1d5db !important;
+    padding:16px !important;
+    background:white !important;
+    color:#111827 !important;
 }
 
-/* MARKDOWN */
-.stMarkdown,
-.stMarkdown p,
-.stMarkdown li {
-
-    color: #111827 !important;
+/* SECTION TITLE */
+.section-title{
+    font-size:40px;
+    font-weight:800;
+    margin-bottom:20px;
 }
 
-/* INPUT */
-.stChatInput input {
-
-    border-radius: 20px !important;
-
-    border: 2px solid #d1d5db !important;
-
-    padding: 15px !important;
-
-    background: white !important;
-
-    color: #111827 !important;
+/* CHANGE BUTTON */
+.change-btn{
+    background:#6C63FF;
+    color:white;
+    padding:12px 24px;
+    border-radius:15px;
+    font-weight:600;
 }
 
-.stChatInput input::placeholder {
-    color: #6b7280 !important;
+/* FLOATING EFFECT */
+.float{
+    animation: float 3s ease-in-out infinite;
+}
+
+@keyframes float{
+    0%{transform:translateY(0px);}
+    50%{transform:translateY(-12px);}
+    100%{transform:translateY(0px);}
 }
 
 </style>
@@ -141,7 +149,7 @@ def load_embed_model():
 
 embed_model = load_embed_model()
 
-# -------- LOAD FLAN-T5 --------
+# -------- LOAD FLAN --------
 @st.cache_resource
 def load_flan():
 
@@ -163,7 +171,7 @@ sections = {
     "Order": [
 
         {
-            "text": "track order where is my order not delivered late order status",
+            "text": "track order where is my order late delivery status",
             "answer": """1. Open My Orders
 2. Check order status
 3. Track delivery
@@ -173,88 +181,39 @@ sections = {
         {
             "text": "cancel order remove order",
             "answer": """1. Open My Orders
-2. Select your order
+2. Select order
 3. Click Cancel Order"""
-        },
-
-        {
-            "text": "support contact customer care help",
-            "answer": """1. Open Help Center
-2. Contact customer support
-3. Explain your issue"""
         }
     ],
 
     "Buy": [
 
         {
-            "text": "how to order buy product purchase food ice cream",
+            "text": "buy product purchase food order item",
             "answer": """1. Search product
 2. Add to cart
-3. Go to checkout
-4. Enter details
-5. Place order"""
-        },
-
-        {
-            "text": "after adding cart what next",
-            "answer": """1. Open cart
-2. Click checkout
-3. Enter delivery details
-4. Select payment
-5. Confirm order"""
-        },
-
-        {
-            "text": "support contact customer care help",
-            "answer": """1. Open Help Center
-2. Contact customer support
-3. Explain your issue"""
+3. Go checkout
+4. Confirm order"""
         }
     ],
 
     "Payment": [
 
         {
-            "text": "payment failed refund money deducted refund not received when i get my refund",
-            "answer": """1. Wait 3–5 working days
-2. Check bank/wallet
+            "text": "refund payment failed money deducted",
+            "answer": """1. Wait 3-5 days
+2. Check bank status
 3. Contact support if needed"""
-        },
-
-        {
-            "text": "double payment charged twice",
-            "answer": "Refund for extra payment will be processed automatically."
-        },
-
-        {
-            "text": "support contact customer care help",
-            "answer": """1. Open Help Center
-2. Contact customer support
-3. Explain your issue"""
         }
     ],
 
     "Account": [
 
         {
-            "text": "forgot password reset login issue",
-            "answer": """1. Go to login page
+            "text": "forgot password login issue",
+            "answer": """1. Open Login
 2. Click Forgot Password
-3. Enter details
-4. Reset password"""
-        },
-
-        {
-            "text": "delete account remove account",
-            "answer": "Please contact customer support to permanently delete your account."
-        },
-
-        {
-            "text": "support contact customer care help",
-            "answer": """1. Open Help Center
-2. Contact customer support
-3. Explain your issue"""
+3. Reset password"""
         }
     ]
 }
@@ -287,12 +246,21 @@ def search(data, question):
 
     return None
 
-# -------- FLAN-T5 --------
+# -------- STRICT FLAN-T5 --------
 def generate_ai(question):
 
     prompt = f"""
-Customer support question: {question}
-Give a short helpful reply.
+You are HACSS customer support AI.
+
+Customer Question:
+{question}
+
+Rules:
+- Give short professional reply
+- Maximum 1 sentence
+- No random answers
+- If unsure say:
+Please contact customer support through Help Center.
 """
 
     inputs = tokenizer(
@@ -304,9 +272,10 @@ Give a short helpful reply.
 
     outputs = model.generate(
         **inputs,
-        max_new_tokens=40,
-        temperature=0.2,
-        do_sample=True
+        max_new_tokens=25,
+        temperature=0.0,
+        do_sample=False,
+        repetition_penalty=1.2
     )
 
     answer = tokenizer.decode(
@@ -314,9 +283,25 @@ Give a short helpful reply.
         skip_special_tokens=True
     ).strip()
 
-    if len(answer) < 3:
+    answer = answer.replace("\n", " ").strip()
 
-        answer = "Please contact customer support through the Help Center section."
+    bad_words = [
+        "rules",
+        "question",
+        "reply",
+        "assistant",
+        "generate"
+    ]
+
+    if (
+        len(answer) < 5
+        or len(answer) > 180
+        or any(word in answer.lower() for word in bad_words)
+    ):
+
+        answer = (
+            "Please contact customer support through the Help Center."
+        )
 
     return answer
 
@@ -327,103 +312,38 @@ if "section" not in st.session_state:
 if "chat" not in st.session_state:
     st.session_state.chat = []
 
-# -------- HERO SECTION --------
+# -------- HERO --------
 st.markdown("""
-<div style="padding-top:20px;">
+<div class="hero-card">
 
-<div style="
-background:white;
-padding:12px 24px;
-border-radius:20px;
-width:fit-content;
-box-shadow:0 4px 15px rgba(0,0,0,0.08);
-font-size:20px;
-font-weight:600;
-color:#6C63FF;
-margin-bottom:25px;
-">
-
-Hello! I am HACSS 😊
-
+<div class="badge">
+🤖 HACSS AI SUPPORT
 </div>
 
 <div style="
 display:flex;
 justify-content:space-between;
 align-items:center;
+gap:40px;
 ">
 
 <div>
 
-<h1 style="
-font-size:72px;
-font-weight:800;
-color:#111827;
-line-height:1.1;
-margin-bottom:10px;
-">
+<div class="hero-title">
+Smart <span>Customer</span><br>
+Support Assistant
+</div>
 
-Your <span style="color:#6C63FF;">AI</span><br>
-Customer Support Assistant
-
-</h1>
-
-<p style="
-font-size:24px;
-color:#6b7280;
-">
-How can I help you today?
-</p>
+<div class="hero-sub">
+Fast AI-powered support for orders, payments, accounts and shopping.
+</div>
 
 </div>
 
-<div style="position:relative;">
+<div class="float">
 
 <img src="https://cdn-icons-png.flaticon.com/512/4712/4712109.png"
-width="250">
-
-<div style="
-position:absolute;
-top:-20px;
-right:0;
-background:#6C63FF;
-padding:14px 20px;
-border-radius:20px;
-color:white;
-font-size:18px;
-font-weight:600;
-box-shadow:0 4px 15px rgba(0,0,0,0.12);
-">
-
-💬 Messages
-
-</div>
-
-<div style="
-position:absolute;
-top:80px;
-right:-60px;
-background:#60A5FA;
-padding:14px 20px;
-border-radius:20px;
-color:white;
-font-size:18px;
-font-weight:600;
-box-shadow:0 4px 15px rgba(0,0,0,0.12);
-transform:rotate(-8deg);
-">
-
-📩 Support
-
-</div>
-
-<img src="https://cdn-icons-png.flaticon.com/512/628/628324.png"
-width="120"
-style="
-position:absolute;
-bottom:-40px;
-right:-20px;
-">
+width="260">
 
 </div>
 
@@ -435,38 +355,42 @@ right:-20px;
 # -------- HOME --------
 if st.session_state.section is None:
 
-    st.markdown("## Choose your issue")
+    st.markdown("""
+    <div class="section-title">
+    Choose Your Support Category
+    </div>
+    """, unsafe_allow_html=True)
 
     col1, col2, col3, col4 = st.columns(4)
 
-    if col1.button("📦\n\nOrder\n\nTrack and manage orders"):
+    if col1.button("📦\n\nOrder\n\nTrack & Manage"):
         st.session_state.section = "Order"
         st.rerun()
 
-    if col2.button("🛒\n\nBuy\n\nPurchase products easily"):
+    if col2.button("🛒\n\nBuy\n\nPurchase Products"):
         st.session_state.section = "Buy"
         st.rerun()
 
-    if col3.button("💳\n\nPayment\n\nRefunds and transactions"):
+    if col3.button("💳\n\nPayment\n\nRefund & Billing"):
         st.session_state.section = "Payment"
         st.rerun()
 
-    if col4.button("👤\n\nAccount\n\nManage your profile"):
+    if col4.button("👤\n\nAccount\n\nProfile Settings"):
         st.session_state.section = "Account"
         st.rerun()
 
 # -------- CHAT --------
 else:
 
-    st.markdown(
-        f"<h2>Selected: {st.session_state.section}</h2>",
-        unsafe_allow_html=True
-    )
+    st.markdown(f"""
+    <div class="section-title">
+    {st.session_state.section} Support
+    </div>
+    """, unsafe_allow_html=True)
 
-    if st.button("🔄 Change Issue"):
+    if st.button("🔄 Change Category"):
 
         st.session_state.section = None
-
         st.session_state.chat = []
 
         st.rerun()
@@ -477,7 +401,9 @@ else:
 
         st.chat_message("assistant").write(a)
 
-    user_input = st.chat_input("Ask your question...")
+    user_input = st.chat_input(
+        "Ask your support question..."
+    )
 
     if user_input:
 
@@ -491,7 +417,6 @@ else:
             "hi",
             "hello",
             "hey",
-            "hlo",
             "hii"
         ]
 
@@ -501,27 +426,17 @@ else:
             "thx"
         ]
 
-        close_greeting = get_close_matches(
-            q,
-            greetings,
-            n=1,
-            cutoff=0.7
-        )
+        if get_close_matches(q, greetings, n=1, cutoff=0.7):
 
-        close_thanks = get_close_matches(
-            q,
-            thanks_words,
-            n=1,
-            cutoff=0.7
-        )
+            answer = (
+                "Hello! 😊 How can HACSS help you today?"
+            )
 
-        if close_greeting:
+        elif get_close_matches(q, thanks_words, n=1, cutoff=0.7):
 
-            answer = "Hello! I am HACSS 😊 How can I help you today?"
-
-        elif close_thanks:
-
-            answer = "You're welcome! 😊 Happy to help."
+            answer = (
+                "You're welcome 😊 Happy to help."
+            )
 
         else:
 
@@ -535,18 +450,20 @@ else:
 
         with st.chat_message("assistant"):
 
-            message = st.empty()
+            msg = st.empty()
 
-            full_text = ""
+            full = ""
 
             for char in answer:
 
-                full_text += char
+                full += char
 
-                message.markdown(full_text + "▌")
+                msg.markdown(full + "▌")
 
                 time.sleep(0.01)
 
-            message.markdown(full_text)
+            msg.markdown(full)
 
-        st.session_state.chat.append((user_input, answer))
+        st.session_state.chat.append(
+            (user_input, answer)
+        )
