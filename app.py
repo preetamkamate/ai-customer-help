@@ -630,14 +630,14 @@ else:
            answer = keyword_search(data, user_input)
 
      # 2. FAISS SEARCH
-          if not answer:
-             answer = search(data, user_input)
+           if not answer:
+               answer = search(data, user_input)
 
 # 3. FLAN-T5 AI
-        if not answer:
-            answer = generate_ai(user_input)
+           if not answer:
+               answer = generate_ai(user_input)
 
-        answer = f"🤖 AI Assistant\n\n{answer}"
+           answer = f"🤖 AI Assistant\n\n{answer}"
 
         with st.chat_message("assistant"):
 
