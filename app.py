@@ -640,7 +640,7 @@ else:
      # 2. FAISS SEARCH
            if not answer:
                answer = search(data, user_input)
-
+               answer = f"🤖 AI Assistant\n\n{answer}"
 # 3. FLAN-T5 AI
            if not answer:
                answer = generate_ai(user_input)
