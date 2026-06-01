@@ -628,7 +628,10 @@ else:
 
         # 1. KEYWORD SEARCH
            answer = keyword_search(data, user_input)
+            
 
+           if answer:
+               answer = f"🟢 Keyword Search\n\n{answer}"
      # 2. FAISS SEARCH
            if not answer:
                answer = search(data, user_input)
