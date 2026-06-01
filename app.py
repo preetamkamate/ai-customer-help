@@ -291,16 +291,21 @@ def search(data, question):
 # -------- KEYWORD SEARCH --------
 def keyword_search(data, question):
 
-    question = question.lower()
+    question = question.lower().strip()
 
-    for item in data:
+    exact_keywords = [
+        "track order",
+        "cancel order",
+        "payment failed",
+        "forgot password",
+        "delete account",
+        "support"
+    ]
 
-        keywords = item["text"].lower().split()
+    if question in exact_keywords:
 
-        for word in keywords:
-
-            if word in question:
-
+        for item in data:
+            if question in item["text"].lower():
                 return item["answer"]
 
     return None
