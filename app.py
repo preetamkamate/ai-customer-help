@@ -287,6 +287,24 @@ def search(data, question):
 
     return None
 
+
+# -------- KEYWORD SEARCH --------
+def keyword_search(data, question):
+
+    question = question.lower()
+
+    for item in data:
+
+        keywords = item["text"].lower().split()
+
+        for word in keywords:
+
+            if word in question:
+
+                return item["answer"]
+
+    return None
+
 # -------- FLAN-T5 --------
 
 def generate_ai(question):
@@ -608,12 +626,18 @@ else:
 
         else:
 
-            answer = search(data, user_input)
+        # 1. KEYWORD SEARCH
+           answer = keyword_search(data, user_input)
 
-            if answer:
-                answer = f"🤖 AI Assistant\n\n{answer}"
-            else:
-                answer = f"🤖 AI Assistant\n\n{generate_ai(user_input)}"
+     # 2. FAISS SEARCH
+          if not answer:
+             answer = search(data, user_input)
+
+# 3. FLAN-T5 AI
+        if not answer:
+            answer = generate_ai(user_input)
+
+        answer = f"🤖 AI Assistant\n\n{answer}"
 
         with st.chat_message("assistant"):
 
