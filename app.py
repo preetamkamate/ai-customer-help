@@ -292,32 +292,90 @@ def search(data, question):
 def generate_ai(question):
 
     prompt = f"""
-Customer support question: {question}
 
-Rules:
-- Reply in one short sentence
-- If unsure, tell user to contact customer support
-- Do not generate random answers
+You are HACSS, a customer support assistant.
+
+Question: {question}
+
+Answer:
+
 """
 
     inputs = tokenizer(
+
         prompt,
+
         return_tensors="pt",
+
         truncation=True,
+
         max_length=128
+
     )
 
     outputs = model.generate(
+
         **inputs,
-        max_new_tokens=30,
-        temperature=0.1,
-        do_sample=False
+
+        max_new_tokens=40,
+
+        temperature=0.3,
+
+        do_sample=True,
+
+        top_p=0.9
+
     )
 
     answer = tokenizer.decode(
+
         outputs[0],
+
         skip_special_tokens=True
+
     ).strip()
+
+    answer = answer.replace(prompt, "").strip()
+
+    bad_phrases = [
+
+        "go home",
+
+        "sleep",
+
+        "baby",
+
+        "question:",
+
+        "answer:",
+
+        "rules:"
+
+    ]
+
+    for phrase in bad_phrases:
+
+        if phrase.lower() in answer.lower():
+
+            return (
+
+                "I could not find an exact answer for your query. "
+
+                "Please contact customer support for further assistance."
+
+            )
+
+    if len(answer) < 5:
+
+        return (
+
+            "I could not find an exact answer for your query. "
+
+            "Please contact customer support for further assistance."
+
+        )
+
+    return answer
 
     # -------- STRICT FILTER --------
     bad_words = [
