@@ -610,11 +610,10 @@ else:
 
             answer = search(data, user_input)
 
-            if not answer:
-
-                with st.spinner("HACSS is thinking..."):
-
-                    answer = generate_ai(user_input)
+            if answer:
+                answer = f"🤖 AI Assistant\n\n{answer}"
+            else:
+                answer = f"🤖 AI Assistant\n\n{generate_ai(user_input)}"
 
         with st.chat_message("assistant"):
 
