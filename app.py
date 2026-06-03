@@ -144,16 +144,9 @@ embed_model = load_embed_model()
 # -------- LOAD FLAN-T5 --------
 @st.cache_resource
 def load_flan():
-
-tokenizer = AutoTokenizer.from_pretrained(
-"google/flan-t5-base"
-)
-
-model = AutoModelForSeq2SeqLM.from_pretrained(
-"google/flan-t5-base"
-)
-
-return tokenizer, model
+    tokenizer = AutoTokenizer.from_pretrained("google/flan-t5-base")
+    model = AutoModelForSeq2SeqLM.from_pretrained("google/flan-t5-base")
+    return tokenizer, model
 
 tokenizer, model = load_flan()
 
