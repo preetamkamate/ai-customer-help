@@ -556,7 +556,7 @@ else:
 
               if answer:
                  answer = f"🔵 AI ASSISTANT\n\n{answer}"
-             else:
+              else:
                 answer = f"  AI ASSISTANT\n\n{generate_ai(user_input)}"
 
         with st.chat_message("assistant"):
