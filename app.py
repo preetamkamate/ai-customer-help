@@ -244,6 +244,19 @@ sections = {
 3. Enter details
 4. Reset password"""
         },
+         {
+
+        "text": "change username update username edit username change profile name username edit",
+
+        "answer": """1. Open Profile Settings
+
+2. Select Edit Profile
+
+3. Enter new username
+
+4. Save changes"""
+
+    },
 
         {
             "text": "delete account remove account",
