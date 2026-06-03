@@ -287,6 +287,28 @@ def search(data, question):
 
     return None
 
+# -------- key --------
+def keyword_search(data, question):
+
+    question = question.lower().strip()
+
+    exact_keywords = [
+        "track order",
+        "cancel order",
+        "payment failed",
+        "forgot password",
+        "delete account",
+        "support"
+    ]
+
+    if question in exact_keywords:
+
+        for item in data:
+            if question in item["text"].lower():
+                return item["answer"]
+
+    return None
+
 # -------- FLAN-T5 --------
 def generate_ai(question):
 
@@ -525,13 +547,17 @@ else:
 
         else:
 
-            answer = search(data, user_input)
+           answer = keyword_search(data, user_input)
 
-            if not answer:
+           if answer:
+              answer = f"🟢 Keyword Search\n\n{answer}"
+           else:
+              answer = search(data, user_input)
 
-                with st.spinner("HACSS is thinking..."):
-
-                    answer = generate_ai(user_input)
+           if answer:
+             answer = f"🔵 AI ASSISTANT\n\n{answer}"
+           else:
+             answer = f"🤖  AI ASSISTANT\\n\n{generate_ai(user_input)}"
 
         with st.chat_message("assistant"):
 
