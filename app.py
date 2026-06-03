@@ -8,9 +8,9 @@ import time
 
 # -------- PAGE --------
 st.set_page_config(
-    page_title="HACSS",
-    page_icon="💬",
-    layout="wide"
+page_title="HACSS",
+page_icon="💬",
+layout="wide"
 )
 
 # -------- MODERN UI --------
@@ -18,91 +18,91 @@ st.markdown("""
 <style>
 
 .stApp {
-    background: #f7f7fb;
-    color: #111827 !important;
+   background: #f7f7fb;
+   color: #111827 !important;
 }
 
 header {
-    visibility: hidden;
+   visibility: hidden;
 }
 
 footer {
-    visibility: hidden;
+   visibility: hidden;
 }
 
 section[data-testid="stSidebar"] {
-    display: none;
+   display: none;
 }
 
 /* ALL TEXT */
 html, body, [class*="css"] {
-    color: #111827 !important;
+   color: #111827 !important;
 }
 
 /* HEADINGS */
 h1, h2, h3, h4 {
-    color: #111827 !important;
+   color: #111827 !important;
 }
 
 /* PARAGRAPH */
 p {
-    color: #6b7280 !important;
+   color: #6b7280 !important;
 }
 
 /* BUTTON */
 .stButton > button {
 
-    width: 100%;
-    min-height: 220px;
+   width: 100%;
+   min-height: 220px;
 
-    border-radius: 30px;
+   border-radius: 30px;
 
-    border: none;
+   border: none;
 
-    background: white;
+   background: white;
 
-    color: #111827 !important;
+   color: #111827 !important;
 
-    font-size: 24px;
+   font-size: 24px;
 
-    font-weight: 700;
+   font-weight: 700;
 
-    box-shadow: 0 8px 25px rgba(0,0,0,0.08);
+   box-shadow: 0 8px 25px rgba(0,0,0,0.08);
 
-    transition: 0.3s;
+   transition: 0.3s;
 
-    padding: 20px;
+   padding: 20px;
 }
 
 .stButton > button:hover {
 
-    transform: translateY(-5px);
+   transform: translateY(-5px);
 
-    box-shadow: 0 10px 25px rgba(0,0,0,0.12);
+   box-shadow: 0 10px 25px rgba(0,0,0,0.12);
 }
 
 /* CHAT */
 [data-testid="stChatMessage"] {
 
-    background: white;
+   background: white;
 
-    border-radius: 20px;
+   border-radius: 20px;
 
-    padding: 15px;
+   padding: 15px;
 
-    margin-bottom: 12px;
+   margin-bottom: 12px;
 
-    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+   box-shadow: 0 2px 10px rgba(0,0,0,0.05);
 
-    color: #111827 !important;
+   color: #111827 !important;
 }
 
 /* FORCE CHAT TEXT BLACK */
 [data-testid="stChatMessage"] * {
 
-    color: #111827 !important;
+   color: #111827 !important;
 
-    opacity: 1 !important;
+   opacity: 1 !important;
 }
 
 /* MARKDOWN */
@@ -110,25 +110,25 @@ p {
 .stMarkdown p,
 .stMarkdown li {
 
-    color: #111827 !important;
+   color: #111827 !important;
 }
 
 /* INPUT */
 .stChatInput input {
 
-    border-radius: 20px !important;
+   border-radius: 20px !important;
 
-    border: 2px solid #d1d5db !important;
+   border: 2px solid #d1d5db !important;
 
-    padding: 15px !important;
+   padding: 15px !important;
 
-    background: white !important;
+   background: white !important;
 
-    color: #111827 !important;
+   color: #111827 !important;
 }
 
 .stChatInput input::placeholder {
-    color: #6b7280 !important;
+   color: #6b7280 !important;
 }
 
 </style>
@@ -137,7 +137,7 @@ p {
 # -------- LOAD EMBEDDING MODEL --------
 @st.cache_resource
 def load_embed_model():
-    return SentenceTransformer("all-MiniLM-L6-v2")
+return SentenceTransformer("all-MiniLM-L6-v2")
 
 embed_model = load_embed_model()
 
@@ -145,148 +145,147 @@ embed_model = load_embed_model()
 @st.cache_resource
 def load_flan():
 
-    tokenizer = AutoTokenizer.from_pretrained(
-        "google/flan-t5-base"
-    )
+tokenizer = AutoTokenizer.from_pretrained(
+"google/flan-t5-base"
+)
 
-    model = AutoModelForSeq2SeqLM.from_pretrained(
-        "google/flan-t5-base"
-    )
+model = AutoModelForSeq2SeqLM.from_pretrained(
+"google/flan-t5-base"
+)
 
-    return tokenizer, model
+return tokenizer, model
 
 tokenizer, model = load_flan()
 
 # -------- DATA --------
 sections = {
 
-    "Order": [
+"Order": [
 
-        {
-            "text": "track order where is my order not delivered late order status",
-            "answer": """1. Open My Orders
+{
+"text": "track order where is my order not delivered late order status",
+"answer": """1. Open My Orders
 2. Check order status
 3. Track delivery
 4. Contact support if delayed"""
-        },
+},
 
-        {
-            "text": "cancel order remove order",
-            "answer": """1. Open My Orders
+{
+"text": "cancel order remove order",
+"answer": """1. Open My Orders
 2. Select your order
 3. Click Cancel Order"""
-        },
+},
 
-        {
-            "text": "support contact customer care help",
-            "answer": """1. Open Help Center
+{
+"text": "support contact customer care help",
+"answer": """1. Open Help Center
 2. Contact customer support
 3. Explain your issue"""
-        }
-    ],
+}
+],
 
-    "Buy": [
+"Buy": [
 
-        {
-            "text": "how to order buy product purchase food ice cream",
-            "answer": """1. Search product
+{
+"text": "how to order buy product purchase food ice cream",
+"answer": """1. Search product
 2. Add to cart
 3. Go to checkout
 4. Enter details
 5. Place order"""
-        },
+},
 
-        {
-            "text": "after adding cart what next",
-            "answer": """1. Open cart
+{
+"text": "after adding cart what next",
+"answer": """1. Open cart
 2. Click checkout
 3. Enter delivery details
 4. Select payment
 5. Confirm order"""
-        },
+},
 
-        {
-            "text": "support contact customer care help",
-            "answer": """1. Open Help Center
+{
+"text": "support contact customer care help",
+"answer": """1. Open Help Center
 2. Contact customer support
 3. Explain your issue"""
-        }
-    ],
+}
+],
 
-    "Payment": [
+"Payment": [
 
-        {
-            "text": "payment failed refund money deducted refund not received when i get my refund",
-            "answer": """1. Wait 3–5 working days
+{
+"text": "payment failed refund money deducted refund not received when i get my refund",
+"answer": """1. Wait 3–5 working days
 2. Check bank/wallet
 3. Contact support if needed"""
-        },
+},
 
-        {
-            "text": "double payment charged twice",
-            "answer": "Refund for extra payment will be processed automatically."
-        },
+{
+"text": "double payment charged twice",
+"answer": "Refund for extra payment will be processed automatically."
+},
 
-        {
-            "text": "support contact customer care help",
-            "answer": """1. Open Help Center
+{
+"text": "support contact customer care help",
+"answer": """1. Open Help Center
 2. Contact customer support
 3. Explain your issue"""
-        }
-    ],
+}
+],
 
-    "Account": [
+"Account": [
 
-        {
-            "text": "forgot password reset login issue",
-            "answer": """1. Go to login page
+{
+"text": "forgot password reset login issue",
+"answer": """1. Go to login page
 2. Click Forgot Password
 3. Enter details
 4. Reset password"""
-        },
+},
 
-        {
-            "text": "delete account remove account",
-            "answer": "Please contact customer support to permanently delete your account."
-        },
+{
+"text": "delete account remove account",
+"answer": "Please contact customer support to permanently delete your account."
+},
 
-        {
-            "text": "support contact customer care help",
-            "answer": """1. Open Help Center
+{
+"text": "support contact customer care help",
+"answer": """1. Open Help Center
 2. Contact customer support
 3. Explain your issue"""
-        }
-    ]
+}
+]
 }
 
 # -------- BUILD INDEX --------
 def build_index(data):
 
-    texts = [d["text"] for d in data]
+texts = [d["text"] for d in data]
 
-    vectors = embed_model.encode(texts)
+vectors = embed_model.encode(texts)
 
-    index = faiss.IndexFlatL2(vectors.shape[1])
+index = faiss.IndexFlatL2(vectors.shape[1])
 
-    index.add(np.array(vectors))
+index.add(np.array(vectors))
 
-    return index
+return index
 
 # -------- SEARCH --------
 def search(data, question):
 
-    index = build_index(data)
+index = build_index(data)
 
-    q_vec = embed_model.encode([question])
+q_vec = embed_model.encode([question])
 
-    D, I = index.search(np.array(q_vec), 1)
+D, I = index.search(np.array(q_vec), 1)
 
-    if D[0][0] < 1.2:
+if D[0][0] < 1.2:
 
-        return data[I[0][0]]["answer"]
+return data[I[0][0]]["answer"]
 
-    return None
-
+return None
 
 # -------- KEYWORD SEARCH --------
 def keyword_search(data, question):
@@ -314,92 +313,39 @@ def keyword_search(data, question):
 
 def generate_ai(question):
 
-    prompt = f"""
+prompt = f"""
+Customer support question: {question}
+Give a short helpful reply.
 
-You are HACSS, a customer support assistant.
-
-Question: {question}
-
-Answer:
-
+Rules:
+- Reply in one short sentence
+- If unsure, tell user to contact customer support
+- Do not generate random answers
 """
 
-    inputs = tokenizer(
+inputs = tokenizer(
+prompt,
+return_tensors="pt",
+truncation=True,
+max_length=128
+)
 
-        prompt,
-
-        return_tensors="pt",
-
-        truncation=True,
-
-        max_length=128
-
-    )
-
-    outputs = model.generate(
-
-        **inputs,
-
+outputs = model.generate(
+**inputs,
         max_new_tokens=40,
+        temperature=0.2,
+        do_sample=True
+        max_new_tokens=30,
+        temperature=0.1,
+        do_sample=False
+)
 
-        temperature=0.3,
+answer = tokenizer.decode(
+outputs[0],
+skip_special_tokens=True
+).strip()
 
-        do_sample=True,
-
-        top_p=0.9
-
-    )
-
-    answer = tokenizer.decode(
-
-        outputs[0],
-
-        skip_special_tokens=True
-
-    ).strip()
-
-    answer = answer.replace(prompt, "").strip()
-
-    bad_phrases = [
-
-        "go home",
-
-        "sleep",
-
-        "baby",
-
-        "question:",
-
-        "answer:",
-
-        "rules:"
-
-    ]
-
-    for phrase in bad_phrases:
-
-        if phrase.lower() in answer.lower():
-
-            return (
-
-                "I could not find an exact answer for your query. "
-
-                "Please contact customer support for further assistance."
-
-            )
-
-    if len(answer) < 5:
-
-        return (
-
-            "I could not find an exact answer for your query. "
-
-            "Please contact customer support for further assistance."
-
-        )
-
-    return answer
-
+    if len(answer) < 3:
     # -------- STRICT FILTER --------
     bad_words = [
         "question",
@@ -419,19 +365,20 @@ Answer:
 
         if word in answer.lower():
 
+        answer = "Please contact customer support through the Help Center section."
             answer = (
                 "I could not understand properly. "
                 "Please contact our customer support team."
             )
 
-    return answer
+return answer
 
 # -------- SESSION --------
 if "section" not in st.session_state:
-    st.session_state.section = None
+st.session_state.section = None
 
 if "chat" not in st.session_state:
-    st.session_state.chat = []
+st.session_state.chat = []
 
 # -------- HERO SECTION --------
 st.markdown("""
@@ -541,103 +488,103 @@ right:-20px;
 # -------- HOME --------
 if st.session_state.section is None:
 
-    st.markdown("## Choose your issue")
+st.markdown("## Choose your issue")
 
-    col1, col2, col3, col4 = st.columns(4)
+col1, col2, col3, col4 = st.columns(4)
 
-    if col1.button("📦\n\nOrder\n\nTrack and manage orders"):
-        st.session_state.section = "Order"
-        st.rerun()
+if col1.button("📦\n\nOrder\n\nTrack and manage orders"):
+st.session_state.section = "Order"
+st.rerun()
 
-    if col2.button("🛒\n\nBuy\n\nPurchase products easily"):
-        st.session_state.section = "Buy"
-        st.rerun()
+if col2.button("🛒\n\nBuy\n\nPurchase products easily"):
+st.session_state.section = "Buy"
+st.rerun()
 
-    if col3.button("💳\n\nPayment\n\nRefunds and transactions"):
-        st.session_state.section = "Payment"
-        st.rerun()
+if col3.button("💳\n\nPayment\n\nRefunds and transactions"):
+st.session_state.section = "Payment"
+st.rerun()
 
-    if col4.button("👤\n\nAccount\n\nManage your profile"):
-        st.session_state.section = "Account"
-        st.rerun()
+if col4.button("👤\n\nAccount\n\nManage your profile"):
+st.session_state.section = "Account"
+st.rerun()
 
 # -------- CHAT --------
 else:
 
-    st.markdown(
-        f"<h2>Selected: {st.session_state.section}</h2>",
-        unsafe_allow_html=True
-    )
+st.markdown(
+f"<h2>Selected: {st.session_state.section}</h2>",
+unsafe_allow_html=True
+)
 
-    if st.button("🔄 Change Issue"):
+if st.button("🔄 Change Issue"):
 
-        st.session_state.section = None
+st.session_state.section = None
 
-        st.session_state.chat = []
+st.session_state.chat = []
 
-        st.rerun()
+st.rerun()
 
-    for q, a in st.session_state.chat:
+for q, a in st.session_state.chat:
 
-        st.chat_message("user").write(q)
+st.chat_message("user").write(q)
 
-        st.chat_message("assistant").write(a)
+st.chat_message("assistant").write(a)
 
-    user_input = st.chat_input("Ask your question...")
+user_input = st.chat_input("Ask your question...")
 
-    if user_input:
+if user_input:
 
-        st.chat_message("user").write(user_input)
+st.chat_message("user").write(user_input)
 
-        data = sections[st.session_state.section]
+data = sections[st.session_state.section]
 
-        q = user_input.lower().strip()
+q = user_input.lower().strip()
 
-        greetings = [
-            "hi",
-            "hello",
-            "hey",
-            "hlo",
-            "hii"
-        ]
+greetings = [
+"hi",
+"hello",
+"hey",
+"hlo",
+"hii"
+]
 
-        thanks_words = [
-            "thanks",
-            "thank you",
-            "thx"
-        ]
+thanks_words = [
+"thanks",
+"thank you",
+"thx"
+]
 
-        close_greeting = get_close_matches(
-            q,
-            greetings,
-            n=1,
-            cutoff=0.7
-        )
+close_greeting = get_close_matches(
+q,
+greetings,
+n=1,
+cutoff=0.7
+)
 
-        close_thanks = get_close_matches(
-            q,
-            thanks_words,
-            n=1,
-            cutoff=0.7
-        )
+close_thanks = get_close_matches(
+q,
+thanks_words,
+n=1,
+cutoff=0.7
+)
 
-        if close_greeting:
+if close_greeting:
 
-            answer = "Hello! I am HACSS 😊 How can I help you today?"
+answer = "Hello! I am HACSS 😊 How can I help you today?"
 
-        elif close_thanks:
+elif close_thanks:
 
-            answer = "You're welcome! 😊 Happy to help."
+answer = "You're welcome! 😊 Happy to help."
 
-        else:
+else:
 
-        # 1. KEYWORD SEARCH
+# 1. KEYWORD SEARCH
            answer = keyword_search(data, user_input)
             
 
            if answer:
                answer = f"🟢 Keyword Search\n\n{answer}"
-     # 2. FAISS SEARCH
+ # 2. FAISS SEARCH
            if not answer:
                answer = search(data, user_input)
                answer = f"🤖 AI Assistant\n\n{answer}"
@@ -647,20 +594,20 @@ else:
 
            #answer = f"🤖 AI Assistant\n\n{answer}"
 
-        with st.chat_message("assistant"):
+with st.chat_message("assistant"):
 
-            message = st.empty()
+message = st.empty()
 
-            full_text = ""
+full_text = ""
 
-            for char in answer:
+for char in answer:
 
-                full_text += char
+full_text += char
 
-                message.markdown(full_text + "▌")
+message.markdown(full_text + "▌")
 
-                time.sleep(0.01)
+time.sleep(0.01)
 
-            message.markdown(full_text)
+message.markdown(full_text)
 
-        st.session_state.chat.append((user_input, answer))
+st.session_state.chat.append((user_input, answer))
