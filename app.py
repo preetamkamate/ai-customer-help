@@ -137,7 +137,7 @@ p {
 # -------- LOAD EMBEDDING MODEL --------
 @st.cache_resource
 def load_embed_model():
-return SentenceTransformer("all-MiniLM-L6-v2")
+   return SentenceTransformer("all-MiniLM-L6-v2")
 
 embed_model = load_embed_model()
 
